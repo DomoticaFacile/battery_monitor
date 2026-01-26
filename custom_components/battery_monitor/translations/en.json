@@ -1,0 +1,50 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Battery Monitor",
+        "description": "Monitors all battery entities available in Home Assistant.",
+        "data": {
+          "threshold": "Low battery threshold (%)",
+          "include_heuristic": "Use heuristic (battery in name/entity_id) in addition to device_class",
+          "scan_domains": "Domains to scan (comma-separated, e.g., sensor)",
+          "include_patterns": "Include only entity_id matching (fnmatch, comma-separated)",
+          "exclude_patterns": "Exclude entity_id matching (fnmatch, comma-separated)",
+          "include_entities": "Include entities (multi-select)",
+          "exclude_entities": "Exclude entities (multi-select)"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only one instance of Battery Monitor is allowed."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Battery Monitor Options",
+        "data": {
+          "threshold": "Low battery threshold (%)",
+          "include_heuristic": "Use heuristic (battery in name/entity_id) in addition to device_class",
+          "scan_domains": "Domains to scan (comma-separated, e.g., sensor)",
+          "include_entities": "Include entities (multi-select)",
+          "exclude_entities": "Exclude entities (multi-select)",
+          "ignore_zero_for_lowest": "Ignore 0% for lowest battery",
+          "notify_on_zero": "Notify when a 0% appears"
+        }
+      },
+      "user": {
+        "title": "Battery Monitor Options",
+        "data": {
+          "threshold": "Low battery threshold (%)",
+          "include_heuristic": "Use heuristic (battery in name/entity_id) in addition to device_class",
+          "scan_domains": "Domains to scan (comma-separated, e.g., sensor)",
+          "include_entities": "Include entities (multi-select)",
+          "exclude_entities": "Exclude entities (multi-select)",
+          "ignore_zero_for_lowest": "Ignore 0% for lowest battery",
+          "notify_on_zero": "Notify when a 0% appears"
+        }
+      }
+    }
+  }
+}

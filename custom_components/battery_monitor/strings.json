@@ -1,0 +1,29 @@
+"options": {
+  "step": {
+    "init": {
+      "title": "Battery Monitor",
+      "data": {
+        "threshold": "Soglia batteria bassa (%)",
+        "include_heuristic": "Usa euristica (battery nel nome/entity_id) oltre al device_class",
+        "scan_domains": "Domini da scansionare (separati da virgola, es: sensor)",
+        "include_entities": "Includi entità (selezione multipla)",
+        "exclude_entities": "Escludi entità (selezione multipla)",
+        "ignore_zero_for_lowest": "Ignora 0% per batteria più scarica",
+        "notify_on_zero": "Notifica quando compare uno 0%"
+      }
+    },
+    "user": {
+      "title": "Battery Monitor",
+      "data": {
+        "threshold": "Soglia batteria bassa (%)",
+        "include_heuristic": "Usa euristica (battery nel nome/entity_id) oltre al device_class",
+        "scan_domains": "Domini da scansionare (separati da virgola, es: sensor)",
+        "include_entities": "Includi entità (selezione multipla)",
+        "exclude_entities": "Escludi entità (selezione multipla)",
+        "ignore_zero_for_lowest": "Ignora 0% per batteria più scarica",
+        "notify_on_zero": "Notifica quando compare uno 0%"
+      }
+    }
+  }
+}
+
