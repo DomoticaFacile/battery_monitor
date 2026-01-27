@@ -1,10 +1,12 @@
 {
   "domain": "battery_monitor",
   "name": "Battery Monitor",
+  "config_flow": true,
   "codeowners": ["@DomoticaFacile"],
   "documentation": "https://domoticafacile.it",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/DomoticaFacile/battery_monitor/issues",
   "requirements": [],
   "version": "1.0.0"
+
 }
