@@ -55,6 +55,7 @@ Integrazione personalizzata per **monitorare tutte le entità batteria** present
 4. Copia e incolla l'indirizzo di questo repo: https://github.com/DomoticaFacile/battery_monitor
 5. Seleziona "Integrazione"
 6. Clicca "Aggiungi"
+7. Cerca l'integrazione nell'elenco di HACS, clicca e poi installa
 
 ---
 
@@ -381,6 +382,7 @@ A custom integration to **monitor all battery entities** in Home Assistant and g
 4. Copy & paste this repository URL: https://github.com/DomoticaFacile/battery_monitor
 5. Select **Integration**
 6. Click **Add**
+7. Find the integration in the HACS list, click it and then install it.
 
 ---
 
