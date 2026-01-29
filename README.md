@@ -353,7 +353,9 @@ A custom integration to **monitor all battery entities** in Home Assistant and g
 [![TikTok](https://img.shields.io/badge/TikTok-Profile-000000?style=for-the-badge&logo=tiktok&logoColor=white)](https://www.tiktok.com/@domoticafacile)
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-Channel-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://whatsapp.com/channel/0029Vb5qW5O4o7qPGrFbRm1T)
 
-<img width="450" height="450" alt="logo" src="https://github.com/user-attachments/assets/274a2cbe-5863-400b-abc7-15de5367af27" />
+<p align="center">
+  <img width="400" height="400" alt="icon" src="https://github.com/user-attachments/assets/a6da43c2-e5eb-422d-aba3-9c42e908a043" />
+</p>
 
 📣 Do you like this integration? ⭐ Star the repository to support the project!
 
