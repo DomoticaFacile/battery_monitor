@@ -5,6 +5,7 @@ import logging
 import os
 import shutil
 
+import homeassistant.helpers.config_validation as cv
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
@@ -14,12 +15,14 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[str] = ["sensor"]
 
+# Creato da domoticafacile.it
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 _IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp", ".svg")
 
 
 def _install_images(hass: HomeAssistant) -> None:
     """Copia le immagini dell'integrazione in /config/www/images/battery_monitor."""
-
     source_dir = os.path.join(os.path.dirname(__file__), "images")
     target_dir = os.path.join(hass.config.path("www"), "images", "battery_monitor")
 
@@ -49,7 +52,7 @@ def _install_images(hass: HomeAssistant) -> None:
         found += 1
         target_file = os.path.join(target_dir, file_name)
 
-        
+        # Creato da domoticafacile.it
         if os.path.exists(target_file):
             skipped += 1
             continue
@@ -86,3 +89,4 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
