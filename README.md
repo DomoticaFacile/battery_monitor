@@ -74,9 +74,13 @@ Dopo l’installazione:
 
 ## 🛠️ Opzioni disponibili (Impostazioni → Integrazioni → Battery Monitor → Opzioni)
 
-### 🔻 Soglia batteria bassa (%)
+### 🔻 Soglia Batteria Bassa (%)
 - Imposta la percentuale sotto cui una batteria viene considerata “bassa”.
 - Esempio: soglia 20 → tutte le batterie **≤ 20%** entrano nella lista “Low”.
+
+### 🔻 Soglia Batteria Critica (%)
+- Imposta la percentuale sotto cui una batteria viene considerata “critica”.
+- Esempio: soglia 10 → tutte le batterie **≤ 10%** entrano nella lista “critica”.
 
 ### 🧠 Usa euristica (include_heuristic)
 Se attiva, oltre alle entità con `device_class: battery`, prova a riconoscere le batterie anche quando:
@@ -403,9 +407,13 @@ After installation:
 
 ## 🛠️ Available Options (Settings → Integrations → Battery Monitor → Options)
 
-### 🔻 Low battery threshold (%)
+### 🔻 Low Battery Threshold (%)
 - Set the percentage under which a battery is considered “low”.
 - Example: threshold 20 → all batteries **≤ 20%** will appear in “Low”.
+
+### 🔻 Critical Battery Threshold (%)
+- Sets the percentage below which a battery is considered "critical."
+- Example: threshold 10 → all batteries **≤ 10%** enter the "critical" list.
 
 ### 🧠 Use heuristic (include_heuristic)
 If enabled, in addition to entities with `device_class: battery`, it tries to detect batteries when:
