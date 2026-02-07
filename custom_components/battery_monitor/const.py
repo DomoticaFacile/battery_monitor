@@ -1,21 +1,23 @@
 # Creato da domoticafacile.it
 DOMAIN = "battery_monitor"
 
+
 CONF_THRESHOLD = "threshold"
+CONF_CRITICAL_THRESHOLD = "critical_threshold"
 CONF_INCLUDE_HEURISTIC = "include_heuristic"
 CONF_SCAN_DOMAINS = "scan_domains"
 CONF_EXCLUDE_PATTERNS = "exclude_patterns"
 CONF_INCLUDE_PATTERNS = "include_patterns"
 
-
 CONF_INCLUDE_ENTITIES = "include_entities"
 CONF_EXCLUDE_ENTITIES = "exclude_entities"
-
 
 CONF_IGNORE_ZERO_FOR_LOWEST = "ignore_zero_for_lowest"
 CONF_NOTIFY_ON_ZERO = "notify_on_zero"
 
+# Defaults
 DEFAULT_THRESHOLD = 20
+DEFAULT_CRITICAL_THRESHOLD = 10
 DEFAULT_INCLUDE_HEURISTIC = True
 DEFAULT_SCAN_DOMAINS = ["sensor"]
 DEFAULT_EXCLUDE_PATTERNS = []
