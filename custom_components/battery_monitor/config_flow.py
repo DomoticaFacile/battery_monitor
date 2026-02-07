@@ -8,6 +8,7 @@ from homeassistant.helpers import selector
 from .const import (
     DOMAIN,
     CONF_THRESHOLD,
+    CONF_CRITICAL_THRESHOLD,
     CONF_INCLUDE_HEURISTIC,
     CONF_SCAN_DOMAINS,
     CONF_INCLUDE_PATTERNS,
@@ -17,6 +18,7 @@ from .const import (
     CONF_IGNORE_ZERO_FOR_LOWEST,
     CONF_NOTIFY_ON_ZERO,
     DEFAULT_THRESHOLD,
+    DEFAULT_CRITICAL_THRESHOLD,
     DEFAULT_INCLUDE_HEURISTIC,
     DEFAULT_SCAN_DOMAINS,
     DEFAULT_INCLUDE_PATTERNS,
@@ -63,8 +65,30 @@ def _ensure_list(value) -> list[str]:
 def _build_schema(defaults: dict) -> vol.Schema:
     return vol.Schema(
         {
-            vol.Optional(CONF_THRESHOLD, default=int(defaults.get(CONF_THRESHOLD, DEFAULT_THRESHOLD))): vol.All(
-                vol.Coerce(int), vol.Range(min=0, max=100)
+            
+            vol.Optional(
+                CONF_THRESHOLD,
+                default=int(defaults.get(CONF_THRESHOLD, DEFAULT_THRESHOLD)),
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    mode=selector.NumberSelectorMode.BOX,
+                    unit_of_measurement="%",
+                )
+            ),
+            vol.Optional(
+                CONF_CRITICAL_THRESHOLD,
+                default=int(defaults.get(CONF_CRITICAL_THRESHOLD, DEFAULT_CRITICAL_THRESHOLD)),
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=100,
+                    step=1,
+                    mode=selector.NumberSelectorMode.BOX,
+                    unit_of_measurement="%",
+                )
             ),
             vol.Optional(
                 CONF_INCLUDE_HEURISTIC,
@@ -113,6 +137,7 @@ class BatteryMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         data = {
             CONF_THRESHOLD: int(user_input.get(CONF_THRESHOLD, DEFAULT_THRESHOLD)),
+            CONF_CRITICAL_THRESHOLD: int(user_input.get(CONF_CRITICAL_THRESHOLD, DEFAULT_CRITICAL_THRESHOLD)),
             CONF_INCLUDE_HEURISTIC: bool(user_input.get(CONF_INCLUDE_HEURISTIC, DEFAULT_INCLUDE_HEURISTIC)),
             CONF_SCAN_DOMAINS: _csv_to_list(user_input.get(CONF_SCAN_DOMAINS, "")) or list(DEFAULT_SCAN_DOMAINS),
             
@@ -155,6 +180,7 @@ class BatteryMonitorOptionsFlow(config_entries.OptionsFlow):
 
         options = {
             CONF_THRESHOLD: int(user_input.get(CONF_THRESHOLD, DEFAULT_THRESHOLD)),
+            CONF_CRITICAL_THRESHOLD: int(user_input.get(CONF_CRITICAL_THRESHOLD, DEFAULT_CRITICAL_THRESHOLD)),
             CONF_INCLUDE_HEURISTIC: bool(user_input.get(CONF_INCLUDE_HEURISTIC, DEFAULT_INCLUDE_HEURISTIC)),
             CONF_SCAN_DOMAINS: _csv_to_list(user_input.get(CONF_SCAN_DOMAINS, "")) or list(DEFAULT_SCAN_DOMAINS),
             CONF_INCLUDE_ENTITIES: _ensure_list(user_input.get(CONF_INCLUDE_ENTITIES, current.get(CONF_INCLUDE_ENTITIES, DEFAULT_INCLUDE_ENTITIES))),
@@ -167,3 +193,4 @@ class BatteryMonitorOptionsFlow(config_entries.OptionsFlow):
         }
 
         return self.async_create_entry(title="", data=options)
+
