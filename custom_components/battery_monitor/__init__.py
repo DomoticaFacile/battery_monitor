@@ -22,7 +22,7 @@ _IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp", ".svg")
 
 
 def _install_images(hass: HomeAssistant) -> None:
-    """Copia le immagini dell'integrazione in /config/www/images/battery_monitor."""
+
     source_dir = os.path.join(os.path.dirname(__file__), "images")
     target_dir = os.path.join(hass.config.path("www"), "images", "battery_monitor")
 
@@ -89,4 +89,3 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-
