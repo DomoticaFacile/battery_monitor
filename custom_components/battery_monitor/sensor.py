@@ -23,6 +23,7 @@ from .const import (
     CONF_INCLUDE_PATTERNS,
     CONF_SCAN_DOMAINS,
     CONF_THRESHOLD,
+    CONF_CRITICAL_THRESHOLD,
     CONF_INCLUDE_ENTITIES,
     CONF_EXCLUDE_ENTITIES,
     CONF_IGNORE_ZERO_FOR_LOWEST,
@@ -32,6 +33,7 @@ from .const import (
     DEFAULT_INCLUDE_PATTERNS,
     DEFAULT_SCAN_DOMAINS,
     DEFAULT_THRESHOLD,
+    DEFAULT_CRITICAL_THRESHOLD,
     DEFAULT_INCLUDE_ENTITIES,
     DEFAULT_EXCLUDE_ENTITIES,
     DEFAULT_IGNORE_ZERO_FOR_LOWEST,
@@ -92,15 +94,20 @@ def _is_battery_entity(state: State, heuristic: bool) -> bool:
     return False
 
 
-def _battery_emoji(value: float, threshold: int) -> str:
-    
+def _battery_emoji(value: float, warning_threshold: int, critical_threshold: int) -> str:
+    """Ritorna un indicatore visivo in base al livello batteria.
+
+    - <= critical_threshold  -> 🔴
+    - <= warning_threshold   -> 🟡
+    - altrimenti             -> 🟢
+
+    Nota: 0% viene comunque mostrato come 🔴.
+    """
     if value <= 0:
         return "🔴"
-    if value <= 5:
+    if value <= critical_threshold:
         return "🔴"
-    if value <= 10:
-        return "🟠"
-    if value <= threshold:
+    if value <= warning_threshold:
         return "🟡"
     return "🟢"
 
@@ -133,6 +140,10 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         cfg = {**self.entry.data, **(self.entry.options or {})}
 
         threshold = int(cfg.get(CONF_THRESHOLD, DEFAULT_THRESHOLD))
+        critical_threshold = int(cfg.get(CONF_CRITICAL_THRESHOLD, DEFAULT_CRITICAL_THRESHOLD))
+        
+        if critical_threshold > threshold:
+            critical_threshold = threshold
         heuristic = bool(cfg.get(CONF_INCLUDE_HEURISTIC, DEFAULT_INCLUDE_HEURISTIC))
         scan_domains = _csv_to_list(cfg.get(CONF_SCAN_DOMAINS, DEFAULT_SCAN_DOMAINS)) or ["sensor"]
         include_patterns = _csv_to_list(cfg.get(CONF_INCLUDE_PATTERNS, DEFAULT_INCLUDE_PATTERNS))
@@ -210,6 +221,7 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         valid = [b for b in batteries if b.available and b.value is not None]
 
         low = [b for b in valid if b.value <= threshold]
+        critical = [b for b in valid if b.value <= critical_threshold]
         zero = [b for b in valid if b.value == 0]
 
         
@@ -227,7 +239,7 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         
         low_sorted = sorted(low, key=lambda b: (b.value if b.value is not None else 9999))
         low_list_text = " | ".join(
-            f"{_battery_emoji(float(b.value), threshold)} {(b.device_name or b.name)}: {int(b.value)}%"
+            f"{_battery_emoji(float(b.value), threshold, critical_threshold)} {(b.device_name or b.name)}: {int(b.value)}%"
             for b in low_sorted
             if b.value is not None
         )
@@ -242,7 +254,7 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         low_devices_count = len(low_device_keys)
 
         
-        if len(zero) > 0:
+        if len(zero) > 0 or len(critical) > 0:
             status = "CRITICAL"
         elif len(low) > 0:
             status = "WARNING"
@@ -280,11 +292,14 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_zero_set = zero_now
 
         return {
+            "critical_threshold": critical_threshold,
             "threshold": threshold,
             "total": len(batteries),
             "valid_total": valid_total,
             "low": low_sorted,
             "low_count": len(low_sorted),
+            "critical": critical,
+            "critical_count": len(critical),
             "low_devices_count": low_devices_count,
             "zero": zero,
             "zero_count": len(zero),
@@ -444,9 +459,11 @@ class BatteryStatusSensor(BatteryBaseSensor):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {
+            "critical_threshold": self.coordinator.data.get("critical_threshold"),
             "threshold": self.coordinator.data.get("threshold"),
             "valid_total": self.coordinator.data.get("valid_total"),
             "low_count": self.coordinator.data.get("low_count"),
+            "critical_count": self.coordinator.data.get("critical_count"),
             "zero_count": self.coordinator.data.get("zero_count"),
             "notify_on_zero": self.coordinator.data.get("notify_on_zero"),
         }
@@ -464,10 +481,12 @@ class BatteryOverviewSensor(BatteryBaseSensor):
     def extra_state_attributes(self) -> dict[str, Any]:
         batteries = self.coordinator.data.get("all", [])
         return {
+            "critical_threshold": self.coordinator.data.get("critical_threshold"),
             "threshold": self.coordinator.data.get("threshold"),
             "status": self.coordinator.data.get("status"),
             "valid_total": self.coordinator.data.get("valid_total"),
             "low_count": self.coordinator.data.get("low_count", 0),
+            "critical_count": self.coordinator.data.get("critical_count", 0),
             "zero_count": self.coordinator.data.get("zero_count", 0),
             "low_percent": self.coordinator.data.get("low_percent", 0.0),
             "zero_percent": self.coordinator.data.get("zero_percent", 0.0),
