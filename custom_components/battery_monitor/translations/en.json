@@ -6,6 +6,7 @@
         "description": "Monitors all battery entities available in Home Assistant.",
         "data": {
           "threshold": "Low battery threshold (%)",
+          "critical_threshold": "Critical battery threshold (%)",
           "include_heuristic": "Use heuristic (battery in name/entity_id) in addition to device_class",
           "scan_domains": "Domains to scan (comma-separated, e.g., sensor)",
           "include_patterns": "Include only entity_id matching (fnmatch, comma-separated)",
@@ -25,6 +26,7 @@
         "title": "Battery Monitor Options",
         "data": {
           "threshold": "Low battery threshold (%)",
+          "critical_threshold": "Critical battery threshold (%)",
           "include_heuristic": "Use heuristic (battery in name/entity_id) in addition to device_class",
           "scan_domains": "Domains to scan (comma-separated, e.g., sensor)",
           "include_entities": "Include entities (multi-select)",
@@ -37,6 +39,7 @@
         "title": "Battery Monitor Options",
         "data": {
           "threshold": "Low battery threshold (%)",
+          "critical_threshold": "Critical battery threshold (%)",
           "include_heuristic": "Use heuristic (battery in name/entity_id) in addition to device_class",
           "scan_domains": "Domains to scan (comma-separated, e.g., sensor)",
           "include_entities": "Include entities (multi-select)",
