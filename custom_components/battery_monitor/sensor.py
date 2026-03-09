@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from fnmatch import fnmatch
 from typing import Any
 
@@ -41,6 +41,8 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+RETAIN_UNAVAILABLE_FOR = timedelta(hours=24)
 
 
 def _safe_float(value: Any) -> float | None:
@@ -83,25 +85,41 @@ def _is_battery_entity(state: State, heuristic: bool) -> bool:
 
     eid = state.entity_id.lower()
     name = (attrs.get("friendly_name") or "").lower()
+    text = f"{eid} {name}"
     unit = (attrs.get("unit_of_measurement") or "").strip()
 
-    if "battery" in eid or "battery" in name or "batter" in eid or "batter" in name:
-        return True
+    excluded_keywords = (
+        "battery_quantity",
+        "batteries",
+        "battery count",
+        "battery_count",
+        "pile",
+        "quantity",
+        "qty",
+        "count",
+        "number_of_batteries",
+    )
+    if any(keyword in text for keyword in excluded_keywords):
+        return False
 
-    if unit == "%" and ("level" in eid or "level" in name):
+    if unit == "%" and (
+        "battery" in text
+        or "batter" in text
+        or "level" in text
+    ):
         return True
 
     return False
 
 
 def _battery_emoji(value: float, warning_threshold: int, critical_threshold: int) -> str:
-    """Ritorna un indicatore visivo in base al livello batteria.
+    """Returns a visual indicator based on the battery level.
 
     - <= critical_threshold  -> 🔴
     - <= warning_threshold   -> 🟡
-    - altrimenti             -> 🟢
+    - otherwise              -> 🟢
 
-    Nota: 0% viene comunque mostrato come 🔴.
+    Note: 0% is still shown as 🔴.
     """
     if value <= 0:
         return "🔴"
@@ -123,12 +141,14 @@ class BatterySnapshot:
     device_class: str | None
     device_id: str | None
     device_name: str | None
+    retained: bool = False
 
 
 class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.entry = entry
         self._last_zero_set: set[str] = set()
+        self._last_valid_snapshots: dict[str, tuple[BatterySnapshot, datetime]] = {}
         super().__init__(
             hass=hass,
             logger=_LOGGER,
@@ -215,10 +235,42 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
         
+        now = datetime.now(timezone.utc)
+        current_entity_ids = {b.entity_id for b in batteries}
+
+        for battery in batteries:
+            if battery.available and battery.value is not None:
+                self._last_valid_snapshots[battery.entity_id] = (battery, now)
+
+        retained_batteries: list[BatterySnapshot] = []
+        for entity_id, (cached, seen_at) in list(self._last_valid_snapshots.items()):
+            if now - seen_at > RETAIN_UNAVAILABLE_FOR:
+                self._last_valid_snapshots.pop(entity_id, None)
+                continue
+
+            if entity_id in current_entity_ids:
+                continue
+
+            retained_batteries.append(
+                BatterySnapshot(
+                    entity_id=cached.entity_id,
+                    name=cached.name,
+                    value=cached.value,
+                    available=False,
+                    unit=cached.unit,
+                    last_changed=cached.last_changed,
+                    device_class=cached.device_class,
+                    device_id=cached.device_id,
+                    device_name=cached.device_name,
+                    retained=True,
+                )
+            )
+
+        batteries.extend(retained_batteries)
         batteries.sort(key=lambda s: (s.value is None, s.value if s.value is not None else 9999))
 
         
-        valid = [b for b in batteries if b.available and b.value is not None]
+        valid = [b for b in batteries if b.value is not None]
 
         low = [b for b in valid if b.value <= threshold]
         critical = [b for b in valid if b.value <= critical_threshold]
@@ -275,7 +327,7 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     persistent_notification.async_create(
                         self.hass,
                         msg,
-                        title="⚠️ Battery Monitor: batteria a 0%",
+                        title="⚠️ Battery Monitor: battery at 0%",
                         notification_id=notification_id,
                     )
             else:
@@ -284,8 +336,8 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     persistent_notification.async_dismiss(self.hass, notification_id)
                     persistent_notification.async_create(
                         self.hass,
-                        "Tutte le batterie precedentemente a **0%** sono tornate sopra 0%.",
-                        title="✅ Battery Monitor: 0% risolto",
+                        "All batteries previously at **0%** have returned to above 0%.",
+                        title="✅ Battery Monitor: 0% resolved",
                         notification_id=f"battery_monitor_zero_resolved_{self.entry.entry_id}",
                     )
 
@@ -311,6 +363,7 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "status": status,
             "ignore_zero_for_lowest": ignore_zero_for_lowest,
             "notify_on_zero": notify_on_zero,
+            "retained_unavailable_for_hours": int(RETAIN_UNAVAILABLE_FOR.total_seconds() // 3600),
         }
 
 
@@ -358,6 +411,7 @@ class BatteryLowSensor(BatteryBaseSensor):
             "devices": [b.device_name for b in low],
             "names": [b.name for b in low],
             "values": [b.value for b in low],
+            "retained": [b.retained for b in low],
         }
 
 
@@ -375,6 +429,7 @@ class BatteryZeroCountSensor(BatteryBaseSensor):
         return {
             "entities": [b.entity_id for b in zero],
             "devices": [b.device_name for b in zero],
+            "retained": [b.retained for b in zero],
         }
 
 
@@ -426,6 +481,7 @@ class BatteryLowestSensor(BatteryBaseSensor):
             "unit": lowest.unit,
             "last_changed": lowest.last_changed,
             "ignore_zero_for_lowest": self.coordinator.data.get("ignore_zero_for_lowest"),
+            "retained": lowest.retained,
         }
 
 
@@ -466,6 +522,7 @@ class BatteryStatusSensor(BatteryBaseSensor):
             "critical_count": self.coordinator.data.get("critical_count"),
             "zero_count": self.coordinator.data.get("zero_count"),
             "notify_on_zero": self.coordinator.data.get("notify_on_zero"),
+            "retained_unavailable_for_hours": int(RETAIN_UNAVAILABLE_FOR.total_seconds() // 3600),
         }
 
 
@@ -498,6 +555,7 @@ class BatteryOverviewSensor(BatteryBaseSensor):
                     "value": b.value,
                     "unit": b.unit,
                     "available": b.available,
+                    "retained": b.retained,
                 }
                 for b in batteries
             ],
