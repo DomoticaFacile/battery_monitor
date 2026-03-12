@@ -16,6 +16,8 @@ A custom integration to **monitor all battery entities** in Home Assistant and g
 ![Maintainer](https://img.shields.io/badge/Maintainer-DomoticaFacile-blueviolet)
 [![Donate](https://img.shields.io/badge/Buy_Me_A_Coffee-%E2%98%95-yellow)](https://www.buymeacoffee.com/domoticafacile)
 ![GitHub stars](https://img.shields.io/github/stars/DomoticaFacile/battery_monitor?style=social)
+[![GitHub all releases](https://img.shields.io/github/downloads/DomoticaFacile/battery_monitor/total.svg?style=for-the-badge)](https://github.com/DomoticaFacile/battery_monitor/releases)
+[![GitHub latest release downloads](https://img.shields.io/github/downloads/DomoticaFacile/battery_monitor/latest/total.svg?style=for-the-badge)](https://github.com/DomoticaFacile/battery_monitor/releases/latest)
 
 [![Facebook Group](https://img.shields.io/badge/Group-Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://www.facebook.com/groups/domoticafacile)
 [![Facebook Page](https://img.shields.io/badge/Page-Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://www.facebook.com/domoticafacile)
@@ -313,7 +315,8 @@ Integrazione personalizzata per **monitorare tutte le entità batteria** present
 ![Maintainer](https://img.shields.io/badge/Maintainer-DomoticaFacile-blueviolet)
 [![Donate](https://img.shields.io/badge/Buy_Me_A_Coffee-%E2%98%95-yellow)](https://www.buymeacoffee.com/domoticafacile)
 ![GitHub stars](https://img.shields.io/github/stars/DomoticaFacile/battery_monitor?style=social)
-
+[![GitHub all releases](https://img.shields.io/github/downloads/DomoticaFacile/battery_monitor/total.svg?style=for-the-badge)](https://github.com/DomoticaFacile/battery_monitor/releases)
+[![GitHub latest release downloads](https://img.shields.io/github/downloads/DomoticaFacile/battery_monitor/latest/total.svg?style=for-the-badge)](https://github.com/DomoticaFacile/battery_monitor/releases/latest)
 
 [![Gruppo Facebook](https://img.shields.io/badge/Gruppo-Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://www.facebook.com/groups/domoticafacile)
 [![Pagina Facebook](https://img.shields.io/badge/Pagina-Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://www.facebook.com/domoticafacile)
