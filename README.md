@@ -197,8 +197,28 @@ Basic example (native):
 ```yaml
 type: vertical-stack
 cards:
+  - type: picture-entity
+    entity: sensor.battery_monitor_status
+    show_state: false
+    show_name: false
+    state_image:
+      OK: /battery_monitor_images/status_ok.png
+      CRITICAL: /battery_monitor_images/status_critical.png
+      WARNING: /battery_monitor_images/status_warning.png
+    image: /battery_monitor_images/status_ok.png
+    card_mod:
+      style: |
+        ha-card {
+          width: 100px;
+          max-width: 100px;
+          margin: 0 auto;
+        }
+        #image {
+          height: 100px;
+          object-fit: contain;
+        }
   - type: entities
-    title: Battery Status
+    title: Stato Batterie
     entities:
       - entity: sensor.battery_monitor_status
       - entity: sensor.battery_monitor_total
