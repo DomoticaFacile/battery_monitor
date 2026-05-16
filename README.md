@@ -500,10 +500,10 @@ cards:
     show_state: false
     show_name: false
     state_image:
-      OK: /local/images/battery_monitor/status_ok.png
-      CRITICAL: /local/images/battery_monitor/status_critical.png
-      WARNING: /local/images/battery_monitor/status_warning.png
-    image: /local/images/battery_monitor/status_ok.png
+      OK: /battery_monitor_images/status_ok.png
+      CRITICAL: /battery_monitor_images/status_critical.png
+      WARNING: /battery_monitor_images/status_warning.png
+    image: /battery_monitor_images/status_ok.png
     card_mod:
       style: |
         ha-card {
