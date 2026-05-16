@@ -9,5 +9,5 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/DomoticaFacile/battery_monitor/issues",
   "requirements": [],
-  "version": "1.0.1"
+  "version": "1.0.5"
 }
