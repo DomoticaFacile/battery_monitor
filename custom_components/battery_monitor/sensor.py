@@ -77,36 +77,44 @@ def _csv_to_list(value: Any) -> list[str]:
 
 def _is_battery_entity(state: State, heuristic: bool) -> bool:
     attrs = state.attributes or {}
-    if attrs.get("device_class") == "battery":
+
+    eid = state.entity_id.lower()
+    name = (attrs.get("friendly_name") or "").lower()
+    unit = (attrs.get("unit_of_measurement") or "").strip()
+    device_class = attrs.get("device_class")
+
+    text = f"{eid} {name}"
+
+    if device_class == "battery":
         return True
 
     if not heuristic:
         return False
 
-    eid = state.entity_id.lower()
-    name = (attrs.get("friendly_name") or "").lower()
-    text = f"{eid} {name}"
-    unit = (attrs.get("unit_of_measurement") or "").strip()
+    is_percent = unit == "%"
 
-    excluded_keywords = (
-        "battery_quantity",
-        "batteries",
-        "battery count",
-        "battery_count",
-        "pile",
-        "quantity",
-        "qty",
-        "count",
-        "number_of_batteries",
+    strict_battery_keywords = (
+        "battery_percent",
+        "battery level",
+        "battery_state",
     )
-    if any(keyword in text for keyword in excluded_keywords):
+
+    if is_percent and any(k in eid for k in strict_battery_keywords):
+        return True
+
+    exclude_keywords = (
+        "charging",
+        "current",
+        "power",
+        "load",
+        "voltage",
+        "energy",
+    )
+
+    if any(k in eid for k in exclude_keywords):
         return False
 
-    if unit == "%" and (
-        "battery" in text
-        or "batter" in text
-        or "level" in text
-    ):
+    if is_percent and "battery" in eid and "sensor" in eid:
         return True
 
     return False
