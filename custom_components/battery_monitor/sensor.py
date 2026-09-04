@@ -79,342 +79,136 @@ def _is_battery_entity(state: State, heuristic: bool) -> bool:
     attrs = state.attributes or {}
 
     eid = state.entity_id.lower()
-    name = (attrs.get("friendly_name") or "").lower()
-    unit = (attrs.get("unit_of_measurement") or "").strip()
-    device_class = attrs.get("device_class")
+    name = (attrs.get("friendly_name") or "").lower()# Creato da domoticafacile.it
+from __future__ import annotations
 
-    text = f"{eid} {name}"
+from typing import Any
 
-    if device_class == "battery":
-        return True
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-    if not heuristic:
-        return False
+from .const import DOMAIN, RETAIN_UNAVAILABLE_FOR, STATUS_CRITICAL, STATUS_OK, STATUS_WARNING
+from .coordinator import BatteryCoordinator, BatterySnapshot
 
-    is_percent = unit == "%"
+PARALLEL_UPDATES = 0
 
-    strict_battery_keywords = (
-        "battery_percent",
-        "battery level",
-        "battery_state",
-    )
-
-    if is_percent and any(k in eid for k in strict_battery_keywords):
-        return True
-
-    exclude_keywords = (
-        "charging",
-        "current",
-        "power",
-        "load",
-        "voltage",
-        "energy",
-    )
-
-    if any(k in eid for k in exclude_keywords):
-        return False
-
-    if is_percent and "battery" in eid and "sensor" in eid:
-        return True
-
-    return False
+ENTITY_NAMES = {
+    "status": "Status",
+    "total": "Total",
+    "low": "Low",
+    "low_devices": "Low Devices",
+    "zero_count": "Zero Count",
+    "unavailable_count": "Unavailable Count",
+    "lowest": "Lowest",
+    "low_percent": "Low Percent",
+    "zero_percent": "Zero Percent",
+    "low_list": "Low List",
+    "overview": "Overview",
+}
 
 
-def _battery_emoji(value: float, warning_threshold: int, critical_threshold: int) -> str:
-    """Returns a visual indicator based on the battery level.
-
-    - <= critical_threshold  -> 🔴
-    - <= warning_threshold   -> 🟡
-    - otherwise              -> 🟢
-
-    Note: 0% is still shown as 🔴.
-    """
-    if value <= 0:
-        return "🔴"
-    if value <= critical_threshold:
-        return "🔴"
-    if value <= warning_threshold:
-        return "🟡"
-    return "🟢"
+def _snap_list(items: list[BatterySnapshot]) -> list[dict[str, Any]]:
+    return [
+        {
+            "entity_id": b.entity_id,
+            "name": b.name,
+            "device_name": b.device_name,
+            "value": b.value,
+            "unit": b.unit,
+            "available": b.available,
+            "retained": b.retained,
+            "assumed_zero": b.assumed_zero,
+        }
+        for b in items
+    ]
 
 
-@dataclass
-class BatterySnapshot:
-    entity_id: str
-    name: str
-    value: float | None
-    available: bool
-    unit: str | None
-    last_changed: str
-    device_class: str | None
-    device_id: str | None
-    device_name: str | None
-    retained: bool = False
+class BatteryBaseSensor(CoordinatorEntity[BatteryCoordinator], SensorEntity):
+    _attr_has_entity_name = True
+    _attr_should_poll = False
 
-
-class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        self.entry = entry
-        self._last_zero_set: set[str] = set()
-        self._last_valid_snapshots: dict[str, tuple[BatterySnapshot, datetime]] = {}
-        super().__init__(
-            hass=hass,
-            logger=_LOGGER,
+    def __init__(self, coordinator: BatteryCoordinator, key: str) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_{key}"
+        # Names are intentionally not translated so entity_ids stay stable
+        # (sensor.battery_monitor_status, ...) across languages.
+        self._attr_name = ENTITY_NAMES[key]
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, coordinator.entry.entry_id)},
             name="Battery Monitor",
-            update_interval=timedelta(minutes=5),
+            manufacturer="Domotica Facile",
+            model="Battery Monitor",
+            entry_type=DeviceEntryType.SERVICE,
         )
 
-    async def _async_update_data(self) -> dict[str, Any]:
-        cfg = {**self.entry.data, **(self.entry.options or {})}
-
-        threshold = int(cfg.get(CONF_THRESHOLD, DEFAULT_THRESHOLD))
-        critical_threshold = int(cfg.get(CONF_CRITICAL_THRESHOLD, DEFAULT_CRITICAL_THRESHOLD))
-        
-        if critical_threshold > threshold:
-            critical_threshold = threshold
-        heuristic = bool(cfg.get(CONF_INCLUDE_HEURISTIC, DEFAULT_INCLUDE_HEURISTIC))
-        scan_domains = _csv_to_list(cfg.get(CONF_SCAN_DOMAINS, DEFAULT_SCAN_DOMAINS)) or ["sensor"]
-        include_patterns = _csv_to_list(cfg.get(CONF_INCLUDE_PATTERNS, DEFAULT_INCLUDE_PATTERNS))
-        exclude_patterns = _csv_to_list(cfg.get(CONF_EXCLUDE_PATTERNS, DEFAULT_EXCLUDE_PATTERNS))
-        include_entities = _csv_to_list(cfg.get(CONF_INCLUDE_ENTITIES, DEFAULT_INCLUDE_ENTITIES))
-        exclude_entities = _csv_to_list(cfg.get(CONF_EXCLUDE_ENTITIES, DEFAULT_EXCLUDE_ENTITIES))
-        ignore_zero_for_lowest = bool(cfg.get(CONF_IGNORE_ZERO_FOR_LOWEST, DEFAULT_IGNORE_ZERO_FOR_LOWEST))
-        notify_on_zero = bool(cfg.get(CONF_NOTIFY_ON_ZERO, DEFAULT_NOTIFY_ON_ZERO))
-
-        ent_reg = er.async_get(self.hass)
-        dev_reg = dr.async_get(self.hass)
-
-        batteries: list[BatterySnapshot] = []
-
-        for st in self.hass.states.async_all():
-            if st.domain not in scan_domains:
-                continue
-
-            eid = st.entity_id
+    @property
+    def data(self) -> dict[str, Any]:
+        return self.coordinator.data or {}
 
 
-            if eid.startswith("sensor.battery_monitor_"):
-                continue
+class BatteryStatusSensor(BatteryBaseSensor):
+    _attr_device_class = None
 
-            ent = ent_reg.async_get(eid)
-            if ent is not None and getattr(ent, "platform", None) == DOMAIN:
-                continue
+    @property
+    def icon(self) -> str:
+        st = self.data.get("status")
+        if st == STATUS_CRITICAL:
+            return "mdi:alert-circle"
+        if st == STATUS_WARNING:
+            return "mdi:alert"
+        return "mdi:check-circle"
 
-            
-            if include_entities and eid not in include_entities:
-                continue
-            
-            if exclude_entities and eid in exclude_entities:
-                continue
+    @property
+    def native_value(self) -> str:
+        return str(self.data.get("status", STATUS_OK))
 
-            
-            if include_patterns and not _match_any(eid, include_patterns):
-                continue
-            if exclude_patterns and _match_any(eid, exclude_patterns):
-                continue
-
-            if not _is_battery_entity(st, heuristic):
-                continue
-
-            attrs = st.attributes or {}
-            value = _safe_float(st.state)
-
-            
-            device_id = None
-            device_name = None
-            if ent and ent.device_id:
-                device_id = ent.device_id
-                dev = dev_reg.async_get(device_id)
-                if dev:
-                    device_name = dev.name_by_user or dev.name
-
-            batteries.append(
-                BatterySnapshot(
-                    entity_id=eid,
-                    name=str(attrs.get("friendly_name", eid)),
-                    value=value,
-                    available=st.state not in ("unknown", "unavailable"),
-                    unit=attrs.get("unit_of_measurement"),
-                    last_changed=st.last_changed.isoformat(),
-                    device_class=attrs.get("device_class"),
-                    device_id=device_id,
-                    device_name=device_name,
-                )
-            )
-
-        
-        now = datetime.now(timezone.utc)
-        current_entity_ids = {b.entity_id for b in batteries}
-
-        for battery in batteries:
-            if battery.available and battery.value is not None:
-                self._last_valid_snapshots[battery.entity_id] = (battery, now)
-
-        retained_batteries: list[BatterySnapshot] = []
-        for entity_id, (cached, seen_at) in list(self._last_valid_snapshots.items()):
-            if now - seen_at > RETAIN_UNAVAILABLE_FOR:
-                self._last_valid_snapshots.pop(entity_id, None)
-                continue
-
-            if entity_id in current_entity_ids:
-                continue
-
-            retained_batteries.append(
-                BatterySnapshot(
-                    entity_id=cached.entity_id,
-                    name=cached.name,
-                    value=cached.value,
-                    available=False,
-                    unit=cached.unit,
-                    last_changed=cached.last_changed,
-                    device_class=cached.device_class,
-                    device_id=cached.device_id,
-                    device_name=cached.device_name,
-                    retained=True,
-                )
-            )
-
-        batteries.extend(retained_batteries)
-        batteries.sort(key=lambda s: (s.value is None, s.value if s.value is not None else 9999))
-
-        
-        valid = [b for b in batteries if b.value is not None]
-
-        low = [b for b in valid if b.value <= threshold]
-        critical = [b for b in valid if b.value <= critical_threshold]
-        zero = [b for b in valid if b.value == 0]
-
-        
-        if ignore_zero_for_lowest:
-            candidates = [b for b in valid if b.value > 0]
-        else:
-            candidates = valid
-        lowest = min(candidates, key=lambda b: b.value) if candidates else None
-
-        
-        valid_total = len(valid)
-        low_percent = round((len(low) / valid_total * 100.0), 1) if valid_total else 0.0
-        zero_percent = round((len(zero) / valid_total * 100.0), 1) if valid_total else 0.0
-
-        
-        low_sorted = sorted(low, key=lambda b: (b.value if b.value is not None else 9999))
-        low_list_text = " | ".join(
-            f"{_battery_emoji(float(b.value), threshold, critical_threshold)} {(b.device_name or b.name)}: {int(b.value)}%"
-            for b in low_sorted
-            if b.value is not None
-        )
-
-        
-        low_device_keys: set[str] = set()
-        for b in low_sorted:
-            if b.device_id:
-                low_device_keys.add(b.device_id)
-            else:
-                low_device_keys.add(b.entity_id)
-        low_devices_count = len(low_device_keys)
-
-        
-        if len(zero) > 0 or len(critical) > 0:
-            status = "CRITICAL"
-        elif len(low) > 0:
-            status = "WARNING"
-        else:
-            status = "OK"
-
-        
-        zero_now = {b.entity_id for b in zero}
-        notification_id = f"battery_monitor_zero_{self.entry.entry_id}"
-
-        if notify_on_zero:
-            if zero_now:
-                
-                if zero_now != self._last_zero_set:
-                    lookup = {b.entity_id: (b.device_name or b.name) for b in batteries}
-                    lines = [f"- **{lookup.get(eid, eid)}** (`{eid}`)" for eid in sorted(zero_now)]
-                    msg = "Rilevate batterie a **0%**:\n" + "\n".join(lines)
-                    persistent_notification.async_create(
-                        self.hass,
-                        msg,
-                        title="⚠️ Battery Monitor: battery at 0%",
-                        notification_id=notification_id,
-                    )
-            else:
-                
-                if self._last_zero_set:
-                    persistent_notification.async_dismiss(self.hass, notification_id)
-                    persistent_notification.async_create(
-                        self.hass,
-                        "All batteries previously at **0%** have returned to above 0%.",
-                        title="✅ Battery Monitor: 0% resolved",
-                        notification_id=f"battery_monitor_zero_resolved_{self.entry.entry_id}",
-                    )
-
-        self._last_zero_set = zero_now
-
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        d = self.data
         return {
-            "critical_threshold": critical_threshold,
-            "threshold": threshold,
-            "total": len(batteries),
-            "valid_total": valid_total,
-            "low": low_sorted,
-            "low_count": len(low_sorted),
-            "critical": critical,
-            "critical_count": len(critical),
-            "low_devices_count": low_devices_count,
-            "zero": zero,
-            "zero_count": len(zero),
-            "low_percent": low_percent,
-            "zero_percent": zero_percent,
-            "lowest": lowest,
-            "all": batteries,
-            "low_list_text": low_list_text,
-            "status": status,
-            "ignore_zero_for_lowest": ignore_zero_for_lowest,
-            "notify_on_zero": notify_on_zero,
+            "threshold": d.get("threshold"),
+            "critical_threshold": d.get("critical_threshold"),
+            "valid_total": d.get("valid_total"),
+            "low_count": d.get("low_count"),
+            "critical_count": d.get("critical_count"),
+            "zero_count": d.get("zero_count"),
+            "unavailable_count": d.get("unavailable_count"),
+            "notify_on_zero": d.get("notify_on_zero"),
+            "treat_unavailable_as_zero": d.get("treat_unavailable_as_zero"),
             "retained_unavailable_for_hours": int(RETAIN_UNAVAILABLE_FOR.total_seconds() // 3600),
         }
 
 
-class BatteryBaseSensor(CoordinatorEntity[BatteryCoordinator], SensorEntity):
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_should_poll = False
-    _attr_state_class = SensorStateClass.MEASUREMENT
-
-    def __init__(self, coordinator: BatteryCoordinator, unique_id: str, name: str) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = unique_id
-        self._attr_name = name
-
-
 class BatteryTotalSensor(BatteryBaseSensor):
     _attr_icon = "mdi:battery"
-    _attr_native_unit_of_measurement = None
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def native_value(self) -> int:
-        
-        return int(self.coordinator.data.get("valid_total", 0))
+        return int(self.data.get("valid_total", 0))
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {
-            "discovered_total": int(self.coordinator.data.get("total", 0)),
-        }
+        return {"discovered_total": int(self.data.get("total", 0))}
 
 
 class BatteryLowSensor(BatteryBaseSensor):
     _attr_icon = "mdi:battery-alert"
-    _attr_native_unit_of_measurement = None
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def native_value(self) -> int:
-        return int(self.coordinator.data.get("low_count", 0))
+        return int(self.data.get("low_count", 0))
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        low = self.coordinator.data.get("low", [])
+        low: list[BatterySnapshot] = self.data.get("low", [])
         return {
-            "threshold": self.coordinator.data.get("threshold"),
+            "threshold": self.data.get("threshold"),
             "entities": [b.entity_id for b in low],
             "devices": [b.device_name for b in low],
             "names": [b.name for b in low],
@@ -423,64 +217,67 @@ class BatteryLowSensor(BatteryBaseSensor):
         }
 
 
-class BatteryZeroCountSensor(BatteryBaseSensor):
-    _attr_icon = "mdi:battery-alert-variant"
-    _attr_native_unit_of_measurement = None
+class BatteryLowDevicesSensor(BatteryBaseSensor):
+    _attr_icon = "mdi:battery-heart-variant"
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def native_value(self) -> int:
-        return int(self.coordinator.data.get("zero_count", 0))
+        return int(self.data.get("low_devices_count", 0))
+
+
+class BatteryZeroCountSensor(BatteryBaseSensor):
+    _attr_icon = "mdi:battery-alert-variant"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    @property
+    def native_value(self) -> int:
+        return int(self.data.get("zero_count", 0))
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        zero = self.coordinator.data.get("zero", [])
+        zero: list[BatterySnapshot] = self.data.get("zero", [])
         return {
             "entities": [b.entity_id for b in zero],
             "devices": [b.device_name for b in zero],
             "retained": [b.retained for b in zero],
+            "assumed_zero": [b.assumed_zero for b in zero],
         }
 
 
-class BatteryLowDevicesSensor(BatteryBaseSensor):
-    _attr_icon = "mdi:battery-heart-variant"
-    _attr_native_unit_of_measurement = None
+class BatteryUnavailableCountSensor(BatteryBaseSensor):
+    _attr_icon = "mdi:battery-unknown"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def native_value(self) -> int:
-        return int(self.coordinator.data.get("low_devices_count", 0))
-
-
-class BatteryLowPercentSensor(BatteryBaseSensor):
-    _attr_icon = "mdi:percent"
-    _attr_native_unit_of_measurement = "%"
+        return int(self.data.get("unavailable_count", 0))
 
     @property
-    def native_value(self) -> float:
-        return float(self.coordinator.data.get("low_percent", 0.0))
-
-
-class BatteryZeroPercentSensor(BatteryBaseSensor):
-    _attr_icon = "mdi:percent-outline"
-    _attr_native_unit_of_measurement = "%"
-
-    @property
-    def native_value(self) -> float:
-        return float(self.coordinator.data.get("zero_percent", 0.0))
+    def extra_state_attributes(self) -> dict[str, Any]:
+        items: list[BatterySnapshot] = self.data.get("unavailable", [])
+        return {
+            "entities": [b.entity_id for b in items],
+            "devices": [b.device_name for b in items],
+            "last_known_values": [b.value for b in items],
+        }
 
 
 class BatteryLowestSensor(BatteryBaseSensor):
     _attr_icon = "mdi:battery-low"
     _attr_native_unit_of_measurement = "%"
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def native_value(self) -> float | None:
-        lowest = self.coordinator.data.get("lowest")
-        return None if not lowest else lowest.value
+        lowest: BatterySnapshot | None = self.data.get("lowest")
+        return None if lowest is None else lowest.value
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        lowest = self.coordinator.data.get("lowest")
-        if not lowest:
+        lowest: BatterySnapshot | None = self.data.get("lowest")
+        if lowest is None:
             return {}
         return {
             "entity_id": lowest.entity_id,
@@ -488,104 +285,86 @@ class BatteryLowestSensor(BatteryBaseSensor):
             "device_name": lowest.device_name,
             "unit": lowest.unit,
             "last_changed": lowest.last_changed,
-            "ignore_zero_for_lowest": self.coordinator.data.get("ignore_zero_for_lowest"),
+            "ignore_zero_for_lowest": self.data.get("ignore_zero_for_lowest"),
             "retained": lowest.retained,
         }
 
 
+class BatteryLowPercentSensor(BatteryBaseSensor):
+    _attr_icon = "mdi:percent"
+    _attr_native_unit_of_measurement = "%"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    @property
+    def native_value(self) -> float:
+        return float(self.data.get("low_percent", 0.0))
+
+
+class BatteryZeroPercentSensor(BatteryBaseSensor):
+    _attr_icon = "mdi:percent-outline"
+    _attr_native_unit_of_measurement = "%"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    @property
+    def native_value(self) -> float:
+        return float(self.data.get("zero_percent", 0.0))
+
+
 class BatteryLowListSensor(BatteryBaseSensor):
     _attr_icon = "mdi:format-list-bulleted"
-    _attr_native_unit_of_measurement = None
-    _attr_state_class = None
 
     @property
     def native_value(self) -> str:
-        return self.coordinator.data.get("low_list_text", "")
-
-
-class BatteryStatusSensor(BatteryBaseSensor):
-    _attr_native_unit_of_measurement = None
-    _attr_state_class = None
-
-    @property
-    def icon(self) -> str:
-        st = self.coordinator.data.get("status")
-        if st == "CRITICAL":
-            return "mdi:alert-circle"
-        if st == "WARNING":
-            return "mdi:alert"
-        return "mdi:check-circle"
-
-    @property
-    def native_value(self) -> str:
-        return str(self.coordinator.data.get("status", "OK"))
+        # HA states are limited to 255 characters.
+        return str(self.data.get("low_list_text", ""))[:255]
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {
-            "critical_threshold": self.coordinator.data.get("critical_threshold"),
-            "threshold": self.coordinator.data.get("threshold"),
-            "valid_total": self.coordinator.data.get("valid_total"),
-            "low_count": self.coordinator.data.get("low_count"),
-            "critical_count": self.coordinator.data.get("critical_count"),
-            "zero_count": self.coordinator.data.get("zero_count"),
-            "notify_on_zero": self.coordinator.data.get("notify_on_zero"),
-            "retained_unavailable_for_hours": int(RETAIN_UNAVAILABLE_FOR.total_seconds() // 3600),
-        }
+        return {"items": _snap_list(self.data.get("low", []))}
 
 
 class BatteryOverviewSensor(BatteryBaseSensor):
     _attr_icon = "mdi:battery-sync"
-    _attr_native_unit_of_measurement = None
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def native_value(self) -> int:
-        return int(self.coordinator.data.get("valid_total", 0))
+        return int(self.data.get("valid_total", 0))
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        batteries = self.coordinator.data.get("all", [])
+        d = self.data
         return {
-            "critical_threshold": self.coordinator.data.get("critical_threshold"),
-            "threshold": self.coordinator.data.get("threshold"),
-            "status": self.coordinator.data.get("status"),
-            "valid_total": self.coordinator.data.get("valid_total"),
-            "low_count": self.coordinator.data.get("low_count", 0),
-            "critical_count": self.coordinator.data.get("critical_count", 0),
-            "zero_count": self.coordinator.data.get("zero_count", 0),
-            "low_percent": self.coordinator.data.get("low_percent", 0.0),
-            "zero_percent": self.coordinator.data.get("zero_percent", 0.0),
-            "batteries": [
-                {
-                    "entity_id": b.entity_id,
-                    "name": b.name,
-                    "device_name": b.device_name,
-                    "value": b.value,
-                    "unit": b.unit,
-                    "available": b.available,
-                    "retained": b.retained,
-                }
-                for b in batteries
-            ],
+            "threshold": d.get("threshold"),
+            "critical_threshold": d.get("critical_threshold"),
+            "status": d.get("status"),
+            "valid_total": d.get("valid_total"),
+            "low_count": d.get("low_count", 0),
+            "critical_count": d.get("critical_count", 0),
+            "zero_count": d.get("zero_count", 0),
+            "unavailable_count": d.get("unavailable_count", 0),
+            "low_percent": d.get("low_percent", 0.0),
+            "zero_percent": d.get("zero_percent", 0.0),
+            "batteries": _snap_list(d.get("all", [])),
         }
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
-    coordinator = BatteryCoordinator(hass, entry)
-    await coordinator.async_config_entry_first_refresh()
-
-    uid = entry.entry_id
+async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback) -> None:
+    coordinator: BatteryCoordinator = entry.runtime_data
     async_add_entities(
         [
-            BatteryStatusSensor(coordinator, f"{uid}_status", "Battery Monitor Status"),
-            BatteryTotalSensor(coordinator, f"{uid}_total", "Battery Monitor Total"),
-            BatteryLowSensor(coordinator, f"{uid}_low", "Battery Monitor Low"),
-            BatteryLowDevicesSensor(coordinator, f"{uid}_low_devices", "Battery Monitor Low Devices"),
-            BatteryZeroCountSensor(coordinator, f"{uid}_zero_count", "Battery Monitor Zero Count"),
-            BatteryLowestSensor(coordinator, f"{uid}_lowest", "Battery Monitor Lowest"),
-            BatteryLowPercentSensor(coordinator, f"{uid}_low_percent", "Battery Monitor Low Percent"),
-            BatteryZeroPercentSensor(coordinator, f"{uid}_zero_percent", "Battery Monitor Zero Percent"),
-            BatteryLowListSensor(coordinator, f"{uid}_low_list", "Battery Monitor Low List"),
-            BatteryOverviewSensor(coordinator, f"{uid}_overview", "Battery Monitor Overview"),
+            BatteryStatusSensor(coordinator, "status"),
+            BatteryTotalSensor(coordinator, "total"),
+            BatteryLowSensor(coordinator, "low"),
+            BatteryLowDevicesSensor(coordinator, "low_devices"),
+            BatteryZeroCountSensor(coordinator, "zero_count"),
+            BatteryUnavailableCountSensor(coordinator, "unavailable_count"),
+            BatteryLowestSensor(coordinator, "lowest"),
+            BatteryLowPercentSensor(coordinator, "low_percent"),
+            BatteryZeroPercentSensor(coordinator, "zero_percent"),
+            BatteryLowListSensor(coordinator, "low_list"),
+            BatteryOverviewSensor(coordinator, "overview"),
         ]
     )
