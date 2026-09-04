@@ -1,4 +1,5 @@
 {
+  "title": "Battery Monitor",
   "config": {
     "step": {
       "user": {
@@ -8,15 +9,19 @@
           "threshold": "Soglia batteria bassa (%)",
           "critical_threshold": "Soglia batteria critica (%)",
           "include_heuristic": "Usa euristica (battery nel nome/entity_id) oltre al device_class",
-          "scan_domains": "Domini da scansionare (separati da virgola, es: sensor)",
-          "include_patterns": "Includi solo entity_id che matchano (fnmatch, separati da virgola)",
-          "exclude_patterns": "Escludi entity_id che matchano (fnmatch, separati da virgola)",
-          "include_entities": "Includi entità (selezione multipla)",
-          "exclude_entities": "Escludi entità (selezione multipla)",
-          "ignore_zero_for_lowest": "Ignora 0% per batteria più scarica",
+          "scan_domains": "Domini da scansionare (separati da virgola, es: sensor, binary_sensor)",
+          "include_entities": "Includi solo queste entità (selezione multipla)",
+          "exclude_entities": "Escludi queste entità (selezione multipla)",
+          "include_patterns": "Includi solo entity_id che corrispondono (fnmatch, separati da virgola)",
+          "exclude_patterns": "Escludi entity_id che corrispondono (fnmatch, separati da virgola)",
+          "ignore_zero_for_lowest": "Ignora 0% per la batteria più scarica",
+          "treat_unavailable_as_zero": "Considera le batterie non disponibili come 0% (se non c'è un valore recente)",
           "notify_on_zero": "Notifica quando compare uno 0%"
         }
       }
+    },
+    "error": {
+      "critical_above_low": "La soglia critica non può essere superiore alla soglia bassa."
     },
     "abort": {
       "single_instance_allowed": "È consentita una sola istanza di Battery Monitor."
@@ -30,26 +35,19 @@
           "threshold": "Soglia batteria bassa (%)",
           "critical_threshold": "Soglia batteria critica (%)",
           "include_heuristic": "Usa euristica (battery nel nome/entity_id) oltre al device_class",
-          "scan_domains": "Domini da scansionare (separati da virgola, es: sensor)",
-          "include_entities": "Includi entità (selezione multipla)",
-          "exclude_entities": "Escludi entità (selezione multipla)",
-          "ignore_zero_for_lowest": "Ignora 0% per batteria più scarica",
-          "notify_on_zero": "Notifica quando compare uno 0%"
-        }
-      },
-      "user": {
-        "title": "Opzioni Battery Monitor",
-        "data": {
-          "threshold": "Soglia batteria bassa (%)",
-          "critical_threshold": "Soglia batteria critica (%)",
-          "include_heuristic": "Usa euristica (battery nel nome/entity_id) oltre al device_class",
-          "scan_domains": "Domini da scansionare (separati da virgola, es: sensor)",
-          "include_entities": "Includi entità (selezione multipla)",
-          "exclude_entities": "Escludi entità (selezione multipla)",
-          "ignore_zero_for_lowest": "Ignora 0% per batteria più scarica",
+          "scan_domains": "Domini da scansionare (separati da virgola, es: sensor, binary_sensor)",
+          "include_entities": "Includi solo queste entità (selezione multipla)",
+          "exclude_entities": "Escludi queste entità (selezione multipla)",
+          "include_patterns": "Includi solo entity_id che corrispondono (fnmatch, separati da virgola)",
+          "exclude_patterns": "Escludi entity_id che corrispondono (fnmatch, separati da virgola)",
+          "ignore_zero_for_lowest": "Ignora 0% per la batteria più scarica",
+          "treat_unavailable_as_zero": "Considera le batterie non disponibili come 0% (se non c'è un valore recente)",
           "notify_on_zero": "Notifica quando compare uno 0%"
         }
       }
+    },
+    "error": {
+      "critical_above_low": "La soglia critica non può essere superiore alla soglia bassa."
     }
   }
 }
