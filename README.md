@@ -86,8 +86,8 @@ After installation:
 
 ### 🧠 Use heuristic (include_heuristic)
 If enabled, in addition to entities with `device_class: battery`, it tries to detect batteries when:
-- “battery/batter” appears in the name/entity_id
-- or the value has “%” and looks like a battery level
+- the unit is “%” **and** “battery”/“batteria” appears in the entity_id or friendly name
+- entities whose name suggests something other than a level (voltage, power, charging, current, energy, temperature…) are skipped
 
 ### 🧭 Domains to scan (scan_domains)
 Default is `sensor`.
@@ -97,11 +97,18 @@ You can add other domains separated by commas if needed.
 - **include_entities**: if you select one or more sensors, Battery Monitor will scan **only** those.
 - **exclude_entities**: selected sensors are **always excluded**.
 
-📌 Pattern filters (fnmatch) are also available for advanced users.
+📌 Pattern filters (fnmatch, e.g. `sensor.*_battery`) are available in the same form for advanced users.
+
+> ⚙️ Options are applied immediately when saved; sensors update within a few seconds of any battery change (plus a 5‑minute safety poll).
 
 ### 🧯 Ignore 0% for lowest battery (ignore_zero_for_lowest)
 When enabled, the **Battery Monitor Lowest** sensor ignores 0% values.
 Useful because some devices (especially Zigbee) may sometimes report a wrong or “stuck” 0%.
+
+### 📴 Unavailable batteries (treat_unavailable_as_zero)
+
+When a battery entity becomes **unavailable**, Battery Monitor keeps its **last known value for 24 hours** (marked as `retained` in the attributes), so a device that died at 0% is still reported at 0% and the 0% notification is **not** marked as resolved.
+If this option is enabled, an unavailable battery with no recent value is counted as **0%**. When disabled, it is simply listed in the **Unavailable Count** sensor.
 
 ### 🔔 Notify when a 0% appears (notify_on_zero)
 When enabled, Battery Monitor creates a persistent notification when at least one battery sensor is detected at 0%.
@@ -115,8 +122,8 @@ Below is the complete list of sensors and their practical use.
 ### ✅ Battery Monitor Status (`sensor.battery_monitor_status`)
 Overall battery system status:
 - **OK** → no battery below threshold and no 0%
-- **WARNING** → at least one battery below threshold (but no 0%)
-- **CRITICAL** → at least one battery at 0%
+- **WARNING** → at least one battery ≤ low threshold
+- **CRITICAL** → at least one battery ≤ critical threshold or at 0%
 
 🔧 Useful for: “traffic light” automations and quick dashboards.
 
@@ -165,6 +172,11 @@ Ready-to-use text list of devices below threshold (e.g., `Name: 12% | Name2: 18%
 Counts how many batteries are **exactly at 0%**.
 
 🔧 Useful for: urgent alerts (dead batteries / sensors stuck at 0).
+
+---
+
+### 📴 Battery Monitor Unavailable Count (`sensor.battery_monitor_unavailable_count`)
+Number of monitored battery entities currently **unavailable** (attributes list them with their last known value).
 
 ---
 
@@ -225,6 +237,7 @@ cards:
       - entity: sensor.battery_monitor_low
       - entity: sensor.battery_monitor_low_devices
       - entity: sensor.battery_monitor_lowest
+      - entity: sensor.battery_monitor_unavailable_count
       - entity: sensor.battery_monitor_low_list
       - entity: sensor.battery_monitor_overview
 ```
@@ -404,8 +417,8 @@ Dopo l’installazione:
 
 ### 🧠 Usa euristica (include_heuristic)
 Se attiva, oltre alle entità con `device_class: battery`, prova a riconoscere le batterie anche quando:
-- nel nome/entity_id compare “battery/batter”
-- o il valore ha unità “%” e sembra un livello batteria
+- l’unità è “%” **e** nell’entity_id o nel nome compare “battery”/“batteria”
+- le entità che sembrano altro (voltage, power, charging, current, energy, temperature…) vengono ignorate
 
 ### 🧭 Domini da scansionare (scan_domains)
 Di default è `sensor`.
@@ -415,11 +428,18 @@ Puoi aggiungere altri domini separati da virgola se necessario.
 - **include_entities**: se selezioni uno o più sensori, Battery Monitor considera **solo** quelli.
 - **exclude_entities**: i sensori selezionati vengono **sempre esclusi**.
   
-📌 Sono presenti anche i filtri pattern (fnmatch) per utenti avanzati.
+📌 Nello stesso form sono disponibili i filtri pattern (fnmatch, es. `sensor.*_battery`) per utenti avanzati.
+
+> ⚙️ Le opzioni si applicano subito al salvataggio; i sensori si aggiornano entro pochi secondi da ogni variazione (più un polling di sicurezza ogni 5 minuti).
 
 ### 🧯 Ignora 0% per batteria più scarica (ignore_zero_for_lowest)
 Quando attivo, il sensore **Battery Monitor Lowest** ignora i valori 0% nel calcolo.
 Utile perché alcuni dispositivi (soprattutto Zigbee) a volte riportano 0% in modo errato o fisso.
+
+### 📴 Batterie non disponibili (treat_unavailable_as_zero)
+
+Quando un’entità batteria diventa **non disponibile**, Battery Monitor conserva l’**ultimo valore noto per 24 ore** (attributo `retained`), così un dispositivo morto a 0% continua a risultare a 0% e la notifica **non** viene segnata come risolta.
+Se l’opzione è attiva, una batteria non disponibile senza valore recente viene conteggiata come **0%**. Se disattiva, viene solo elencata nel sensore **Unavailable Count**.
 
 ### 🔔 Notifica quando compare uno 0% (notify_on_zero)
 Quando attivo, Battery Monitor genera una notifica persistente quando viene rilevato almeno un sensore batteria a 0%.
@@ -433,8 +453,8 @@ Di seguito l’elenco completo dei sensori e il loro utilizzo pratico.
 ### ✅ Battery Monitor Status (`sensor.battery_monitor_status`)
 **Stato generale** dell’impianto batterie:
 - **OK** → nessuna batteria sotto soglia e nessun 0%
-- **WARNING** → almeno una batteria sotto soglia (ma nessun 0%)
-- **CRITICAL** → almeno una batteria a 0%
+- **WARNING** → almeno una batteria ≤ soglia bassa
+- **CRITICAL** → almeno una batteria ≤ soglia critica oppure a 0%
 
 🔧 Utile per: automazioni “semaforo”, dashboard immediate.
 
@@ -483,6 +503,11 @@ Lista testuale pronta dei dispositivi sotto soglia (es. `Nome: 12% | Nome2: 18%`
 Conta quante batterie sono **esattamente a 0%**.
 
 🔧 Utile per: alert urgenti (batterie finite / sensori bloccati su 0).
+
+---
+
+### 📴 Battery Monitor Unavailable Count (`sensor.battery_monitor_unavailable_count`)
+Numero di entità batteria monitorate attualmente **non disponibili** (negli attributi l’elenco con l’ultimo valore noto).
 
 ---
 
@@ -543,6 +568,7 @@ cards:
       - entity: sensor.battery_monitor_low
       - entity: sensor.battery_monitor_low_devices
       - entity: sensor.battery_monitor_lowest
+      - entity: sensor.battery_monitor_unavailable_count
       - entity: sensor.battery_monitor_low_list
       - entity: sensor.battery_monitor_overview
 ```
@@ -649,3 +675,4 @@ Con un piccolo contributo puoi supportare lo sviluppo di nuovi progetti, articol
 
 Anche un gesto simbolico fa la differenza.
 Grazie di cuore per il tuo supporto ❤️🔋
+
