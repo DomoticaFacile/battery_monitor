@@ -107,8 +107,11 @@ Useful because some devices (especially Zigbee) may sometimes report a wrong or 
 
 ### 📴 Unavailable batteries (treat_unavailable_as_zero)
 
-When a battery entity becomes **unavailable**, Battery Monitor keeps its **last known value for 24 hours** (marked as `retained` in the attributes), so a device that died at 0% is still reported at 0% and the 0% notification is **not** marked as resolved.
-If this option is enabled, an unavailable battery with no recent value is counted as **0%**. When disabled, it is simply listed in the **Unavailable Count** sensor.
+When a battery entity becomes **unavailable**, Battery Monitor keeps its **last known value** (marked as `retained` in the attributes), so a device that died at 0% is still reported at 0% and the 0% notification is **not** marked as resolved. Last known values are **saved to disk** and survive Home Assistant restarts.
+
+By default the value is kept **until the entity is removed from Home Assistant**. With the *"Keep last known value for (hours)"* option you can set a limit instead (e.g. 168 = one week); `0` means no limit.
+
+If *treat_unavailable_as_zero* is enabled, an unavailable battery **with no last known value** is counted as **0%**. When disabled, it is simply listed in the **Unavailable Count** sensor.
 
 ### 🔔 Notify when a 0% appears (notify_on_zero)
 When enabled, Battery Monitor creates a persistent notification when at least one battery sensor is detected at 0%.
@@ -438,8 +441,11 @@ Utile perché alcuni dispositivi (soprattutto Zigbee) a volte riportano 0% in mo
 
 ### 📴 Batterie non disponibili (treat_unavailable_as_zero)
 
-Quando un’entità batteria diventa **non disponibile**, Battery Monitor conserva l’**ultimo valore noto per 24 ore** (attributo `retained`), così un dispositivo morto a 0% continua a risultare a 0% e la notifica **non** viene segnata come risolta.
-Se l’opzione è attiva, una batteria non disponibile senza valore recente viene conteggiata come **0%**. Se disattiva, viene solo elencata nel sensore **Unavailable Count**.
+Quando un’entità batteria diventa **non disponibile**, Battery Monitor conserva l’**ultimo valore noto** (attributo `retained`), così un dispositivo morto a 0% continua a risultare a 0% e la notifica **non** viene segnata come risolta. Gli ultimi valori noti vengono **salvati su disco** e sopravvivono ai riavvii di Home Assistant.
+
+Di default il valore viene conservato **finché l’entità non viene rimossa da Home Assistant**. Con l’opzione *“Conserva l’ultimo valore noto per (ore)”* puoi impostare un limite (es. 168 = una settimana); `0` significa nessun limite.
+
+Se *treat_unavailable_as_zero* è attiva, una batteria non disponibile **senza un ultimo valore noto** viene conteggiata come **0%**. Se disattiva, viene solo elencata nel sensore **Unavailable Count**.
 
 ### 🔔 Notifica quando compare uno 0% (notify_on_zero)
 Quando attivo, Battery Monitor genera una notifica persistente quando viene rilevato almeno un sensore batteria a 0%.
@@ -675,4 +681,3 @@ Con un piccolo contributo puoi supportare lo sviluppo di nuovi progetti, articol
 
 Anche un gesto simbolico fa la differenza.
 Grazie di cuore per il tuo supporto ❤️🔋
-
