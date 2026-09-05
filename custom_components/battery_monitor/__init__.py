@@ -34,6 +34,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: BatteryMonitorConfigEntry) -> bool:
     """Set up Battery Monitor from a config entry."""
     coordinator = BatteryCoordinator(hass, entry)
+    await coordinator.async_load_storage()
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
 
@@ -53,3 +54,8 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
 async def async_unload_entry(hass: HomeAssistant, entry: BatteryMonitorConfigEntry) -> bool:
     """Unload Battery Monitor."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Delete persisted data when the integration is removed."""
+    await BatteryCoordinator.async_remove_storage(hass, entry)

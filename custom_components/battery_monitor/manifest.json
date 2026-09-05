@@ -14,5 +14,5 @@
   "issue_tracker": "https://github.com/DomoticaFacile/battery_monitor/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "1.1.1"
+  "version": "1.2.0"
 }

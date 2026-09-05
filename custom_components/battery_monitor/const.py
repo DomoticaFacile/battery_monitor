@@ -16,6 +16,7 @@ CONF_EXCLUDE_ENTITIES = "exclude_entities"
 CONF_IGNORE_ZERO_FOR_LOWEST = "ignore_zero_for_lowest"
 CONF_NOTIFY_ON_ZERO = "notify_on_zero"
 CONF_TREAT_UNAVAILABLE_AS_ZERO = "treat_unavailable_as_zero"
+CONF_RETENTION_HOURS = "unavailable_retention_hours"
 
 # Defaults
 DEFAULT_THRESHOLD = 20
@@ -31,10 +32,12 @@ DEFAULT_EXCLUDE_ENTITIES: list[str] = []
 DEFAULT_IGNORE_ZERO_FOR_LOWEST = True
 DEFAULT_NOTIFY_ON_ZERO = True
 DEFAULT_TREAT_UNAVAILABLE_AS_ZERO = False
+# 0 = keep the last known value until the entity is removed from Home Assistant.
+DEFAULT_RETENTION_HOURS = 0
 
-# How long the last valid value of a battery is retained after it becomes
-# unavailable (or disappears from the state machine).
-RETAIN_UNAVAILABLE_FOR = timedelta(hours=24)
+# Persistent storage for last known values / notification state.
+STORAGE_VERSION = 1
+STORAGE_SAVE_DELAY = 10  # seconds
 
 # Fallback poll interval; updates are normally event driven.
 UPDATE_INTERVAL = timedelta(minutes=5)

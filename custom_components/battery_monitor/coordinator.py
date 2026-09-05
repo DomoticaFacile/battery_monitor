@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from dataclasses import asdict
+from datetime import datetime, timedelta, timezone
 from fnmatch import fnmatch
 from typing import Any
 
@@ -14,6 +15,7 @@ from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, State, callb
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.debounce import Debouncer
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
@@ -25,6 +27,7 @@ from .const import (
     CONF_INCLUDE_HEURISTIC,
     CONF_INCLUDE_PATTERNS,
     CONF_NOTIFY_ON_ZERO,
+    CONF_RETENTION_HOURS,
     CONF_SCAN_DOMAINS,
     CONF_THRESHOLD,
     CONF_TREAT_UNAVAILABLE_AS_ZERO,
@@ -36,12 +39,14 @@ from .const import (
     DEFAULT_INCLUDE_HEURISTIC,
     DEFAULT_INCLUDE_PATTERNS,
     DEFAULT_NOTIFY_ON_ZERO,
+    DEFAULT_RETENTION_HOURS,
     DEFAULT_SCAN_DOMAINS,
     DEFAULT_THRESHOLD,
     DEFAULT_TREAT_UNAVAILABLE_AS_ZERO,
     DOMAIN,
     REFRESH_DEBOUNCE_SECONDS,
-    RETAIN_UNAVAILABLE_FOR,
+    STORAGE_SAVE_DELAY,
+    STORAGE_VERSION,
     STATUS_CRITICAL,
     STATUS_OK,
     STATUS_WARNING,
@@ -166,6 +171,7 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_zero_set: set[str] = set()
         self._last_valid_snapshots: dict[str, tuple[BatterySnapshot, datetime]] = {}
         self._unsub_state: CALLBACK_TYPE | None = None
+        self._store: Store = Store(hass, STORAGE_VERSION, self._storage_key(entry))
         super().__init__(
             hass=hass,
             logger=_LOGGER,
@@ -187,6 +193,47 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         cfg = {**self.entry.data, **(self.entry.options or {})}
         cfg["scan_domains_list"] = _csv_to_list(cfg.get(CONF_SCAN_DOMAINS, DEFAULT_SCAN_DOMAINS)) or ["sensor"]
         return cfg
+
+    # ---------------------------------------------------------------- storage
+    @staticmethod
+    def _storage_key(entry: ConfigEntry) -> str:
+        return f"{DOMAIN}.{entry.entry_id}"
+
+    async def async_load_storage(self) -> None:
+        """Restore last known values and notification state from disk."""
+        try:
+            data = await self._store.async_load()
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Battery Monitor: could not load stored data: %s", err)
+            return
+        if not data:
+            return
+        for eid, item in (data.get("snapshots") or {}).items():
+            try:
+                snap = BatterySnapshot(**item["snapshot"])
+                seen_at = datetime.fromisoformat(item["seen_at"])
+                self._last_valid_snapshots[eid] = (snap, seen_at)
+            except (KeyError, TypeError, ValueError):
+                continue
+        self._last_zero_set = set(data.get("last_zero_set") or [])
+        _LOGGER.debug("Battery Monitor: restored %d cached values", len(self._last_valid_snapshots))
+
+    def _storage_data(self) -> dict[str, Any]:
+        return {
+            "snapshots": {
+                eid: {"snapshot": asdict(snap), "seen_at": seen_at.isoformat()}
+                for eid, (snap, seen_at) in self._last_valid_snapshots.items()
+            },
+            "last_zero_set": sorted(self._last_zero_set),
+        }
+
+    @callback
+    def _schedule_save(self) -> None:
+        self._store.async_delay_save(self._storage_data, STORAGE_SAVE_DELAY)
+
+    @staticmethod
+    async def async_remove_storage(hass: HomeAssistant, entry: ConfigEntry) -> None:
+        await Store(hass, STORAGE_VERSION, BatteryCoordinator._storage_key(entry)).async_remove()
 
     # ------------------------------------------------------------- listeners
     @callback
@@ -230,15 +277,23 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         treat_unavailable_as_zero = bool(
             cfg.get(CONF_TREAT_UNAVAILABLE_AS_ZERO, DEFAULT_TREAT_UNAVAILABLE_AS_ZERO)
         )
+        retention_hours = int(cfg.get(CONF_RETENTION_HOURS, DEFAULT_RETENTION_HOURS) or 0)
+        retention: timedelta | None = timedelta(hours=retention_hours) if retention_hours > 0 else None
 
         ent_reg = er.async_get(self.hass)
         dev_reg = dr.async_get(self.hass)
         now = datetime.now(timezone.utc)
 
-        # Purge expired cache entries.
+        # Purge cache entries: expired (if a retention period is set) or whose
+        # entity has been removed from Home Assistant (absent from both the
+        # state machine and the entity registry).
+        cache_changed = False
         for eid, (_, seen_at) in list(self._last_valid_snapshots.items()):
-            if now - seen_at > RETAIN_UNAVAILABLE_FOR:
+            expired = retention is not None and now - seen_at > retention
+            removed = self.hass.states.get(eid) is None and ent_reg.async_get(eid) is None
+            if expired or removed:
                 self._last_valid_snapshots.pop(eid, None)
+                cache_changed = True
 
         batteries: list[BatterySnapshot] = []
         seen: set[str] = set()
@@ -291,6 +346,9 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
             if available and value is not None:
+                prev = self._last_valid_snapshots.get(eid)
+                if prev is None or prev[0].value != value:
+                    cache_changed = True
                 self._last_valid_snapshots[eid] = (snap, now)
             else:
                 snap = self._apply_retention(snap, treat_unavailable_as_zero)
@@ -337,7 +395,9 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             status = STATUS_OK
 
-        self._handle_zero_notifications(notify_on_zero, batteries, zero)
+        zero_changed = self._handle_zero_notifications(notify_on_zero, batteries, zero)
+        if cache_changed or zero_changed:
+            self._schedule_save()
 
         return {
             "critical_threshold": critical_threshold,
@@ -362,7 +422,7 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "ignore_zero_for_lowest": ignore_zero_for_lowest,
             "notify_on_zero": notify_on_zero,
             "treat_unavailable_as_zero": treat_unavailable_as_zero,
-            "retained_unavailable_for_hours": int(RETAIN_UNAVAILABLE_FOR.total_seconds() // 3600),
+            "unavailable_retention_hours": retention_hours,
         }
 
     # --------------------------------------------------------------- helpers
@@ -384,7 +444,8 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _handle_zero_notifications(
         self, notify_on_zero: bool, batteries: list[BatterySnapshot], zero: list[BatterySnapshot]
-    ) -> None:
+    ) -> bool:
+        """Manage the 0% persistent notification. Returns True if the tracked set changed."""
         zero_now = {b.entity_id for b in zero}
         by_id = {b.entity_id: b for b in batteries}
 
@@ -398,9 +459,10 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         }
         tracked = zero_now | pending
 
+        changed = tracked != self._last_zero_set
         if not notify_on_zero:
             self._last_zero_set = tracked
-            return
+            return changed
 
         nid = f"battery_monitor_zero_{self.entry.entry_id}"
         nid_resolved = f"battery_monitor_zero_resolved_{self.entry.entry_id}"
@@ -427,3 +489,4 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
         self._last_zero_set = tracked
+        return changed

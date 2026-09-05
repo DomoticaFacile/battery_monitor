@@ -17,6 +17,7 @@ from .const import (
     CONF_INCLUDE_HEURISTIC,
     CONF_INCLUDE_PATTERNS,
     CONF_NOTIFY_ON_ZERO,
+    CONF_RETENTION_HOURS,
     CONF_SCAN_DOMAINS,
     CONF_THRESHOLD,
     CONF_TREAT_UNAVAILABLE_AS_ZERO,
@@ -28,6 +29,7 @@ from .const import (
     DEFAULT_INCLUDE_HEURISTIC,
     DEFAULT_INCLUDE_PATTERNS,
     DEFAULT_NOTIFY_ON_ZERO,
+    DEFAULT_RETENTION_HOURS,
     DEFAULT_SCAN_DOMAINS,
     DEFAULT_THRESHOLD,
     DEFAULT_TREAT_UNAVAILABLE_AS_ZERO,
@@ -100,6 +102,14 @@ def _build_schema(defaults: dict[str, Any]) -> vol.Schema:
                 default=bool(defaults.get(CONF_TREAT_UNAVAILABLE_AS_ZERO, DEFAULT_TREAT_UNAVAILABLE_AS_ZERO)),
             ): selector.BooleanSelector(),
             vol.Optional(
+                CONF_RETENTION_HOURS,
+                default=int(defaults.get(CONF_RETENTION_HOURS, DEFAULT_RETENTION_HOURS) or 0),
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0, max=8760, step=1, mode=selector.NumberSelectorMode.BOX, unit_of_measurement="h"
+                )
+            ),
+            vol.Optional(
                 CONF_NOTIFY_ON_ZERO,
                 default=bool(defaults.get(CONF_NOTIFY_ON_ZERO, DEFAULT_NOTIFY_ON_ZERO)),
             ): selector.BooleanSelector(),
@@ -128,6 +138,7 @@ def _normalize(user_input: dict[str, Any], current: dict[str, Any]) -> tuple[dic
         CONF_TREAT_UNAVAILABLE_AS_ZERO: bool(
             user_input.get(CONF_TREAT_UNAVAILABLE_AS_ZERO, DEFAULT_TREAT_UNAVAILABLE_AS_ZERO)
         ),
+        CONF_RETENTION_HOURS: max(0, int(user_input.get(CONF_RETENTION_HOURS, DEFAULT_RETENTION_HOURS) or 0)),
         CONF_NOTIFY_ON_ZERO: bool(user_input.get(CONF_NOTIFY_ON_ZERO, DEFAULT_NOTIFY_ON_ZERO)),
     }
     return data, errors
@@ -135,7 +146,7 @@ def _normalize(user_input: dict[str, Any], current: dict[str, Any]) -> tuple[dic
 
 class BatteryMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
-    MINOR_VERSION = 2
+    MINOR_VERSION = 3
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         if self._async_current_entries():

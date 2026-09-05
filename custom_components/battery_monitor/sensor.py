@@ -10,7 +10,7 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, RETAIN_UNAVAILABLE_FOR, STATUS_CRITICAL, STATUS_OK, STATUS_WARNING
+from .const import DOMAIN, STATUS_CRITICAL, STATUS_OK, STATUS_WARNING
 from .coordinator import BatteryCoordinator, BatterySnapshot
 
 PARALLEL_UPDATES = 0
@@ -98,7 +98,7 @@ class BatteryStatusSensor(BatteryBaseSensor):
             "unavailable_count": d.get("unavailable_count"),
             "notify_on_zero": d.get("notify_on_zero"),
             "treat_unavailable_as_zero": d.get("treat_unavailable_as_zero"),
-            "retained_unavailable_for_hours": int(RETAIN_UNAVAILABLE_FOR.total_seconds() // 3600),
+            "unavailable_retention_hours": d.get("unavailable_retention_hours"),
         }
 
 
