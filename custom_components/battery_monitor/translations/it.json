@@ -14,8 +14,9 @@
           "exclude_entities": "Escludi queste entità (selezione multipla)",
           "include_patterns": "Includi solo entity_id che corrispondono (fnmatch, separati da virgola)",
           "exclude_patterns": "Escludi entity_id che corrispondono (fnmatch, separati da virgola)",
-          "ignore_zero_for_lowest": "Ignora 0% per la batteria più scarica",
-          "treat_unavailable_as_zero": "Considera le batterie non disponibili come 0% (se non c'è un valore recente)",
+          "ignore_zero_for_lowest": "Ignora lo 0% nel calcolo della batteria più scarica",
+          "treat_unavailable_as_zero": "Considera le batterie non disponibili come 0% (se non esiste un ultimo valore noto)",
+          "unavailable_retention_hours": "Conserva l'ultimo valore noto delle batterie non disponibili per (ore, 0 = finché l'entità non viene rimossa da Home Assistant)",
           "notify_on_zero": "Notifica quando compare uno 0%"
         }
       }
@@ -40,8 +41,9 @@
           "exclude_entities": "Escludi queste entità (selezione multipla)",
           "include_patterns": "Includi solo entity_id che corrispondono (fnmatch, separati da virgola)",
           "exclude_patterns": "Escludi entity_id che corrispondono (fnmatch, separati da virgola)",
-          "ignore_zero_for_lowest": "Ignora 0% per la batteria più scarica",
-          "treat_unavailable_as_zero": "Considera le batterie non disponibili come 0% (se non c'è un valore recente)",
+          "ignore_zero_for_lowest": "Ignora lo 0% nel calcolo della batteria più scarica",
+          "treat_unavailable_as_zero": "Considera le batterie non disponibili come 0% (se non esiste un ultimo valore noto)",
+          "unavailable_retention_hours": "Conserva l'ultimo valore noto delle batterie non disponibili per (ore, 0 = finché l'entità non viene rimossa da Home Assistant)",
           "notify_on_zero": "Notifica quando compare uno 0%"
         }
       }

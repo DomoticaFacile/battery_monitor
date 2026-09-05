@@ -14,8 +14,9 @@
           "exclude_entities": "Exclude these entities (multi-select)",
           "include_patterns": "Include only entity_id matching (fnmatch, comma-separated)",
           "exclude_patterns": "Exclude entity_id matching (fnmatch, comma-separated)",
-          "ignore_zero_for_lowest": "Ignore 0% for lowest battery",
-          "treat_unavailable_as_zero": "Treat unavailable batteries as 0% (when no recent value is known)",
+          "ignore_zero_for_lowest": "Ignore 0% when calculating the lowest battery",
+          "treat_unavailable_as_zero": "Treat unavailable batteries as 0% (when no last known value exists)",
+          "unavailable_retention_hours": "Keep last known value of unavailable batteries for (hours, 0 = until the entity is removed from Home Assistant)",
           "notify_on_zero": "Notify when a 0% value appears"
         }
       }
@@ -40,8 +41,9 @@
           "exclude_entities": "Exclude these entities (multi-select)",
           "include_patterns": "Include only entity_id matching (fnmatch, comma-separated)",
           "exclude_patterns": "Exclude entity_id matching (fnmatch, comma-separated)",
-          "ignore_zero_for_lowest": "Ignore 0% for lowest battery",
-          "treat_unavailable_as_zero": "Treat unavailable batteries as 0% (when no recent value is known)",
+          "ignore_zero_for_lowest": "Ignore 0% when calculating the lowest battery",
+          "treat_unavailable_as_zero": "Treat unavailable batteries as 0% (when no last known value exists)",
+          "unavailable_retention_hours": "Keep last known value of unavailable batteries for (hours, 0 = until the entity is removed from Home Assistant)",
           "notify_on_zero": "Notify when a 0% value appears"
         }
       }
