@@ -53,8 +53,9 @@ class BatteryBaseSensor(CoordinatorEntity[BatteryCoordinator], SensorEntity):
     def __init__(self, coordinator: BatteryCoordinator, key: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_{key}"
-        # Names are intentionally not translated so entity_ids stay stable
-        # (sensor.battery_monitor_status, ...) across languages.
+        self._attr_translation_key = key
+        # Keep the English fallback for environments without translations,
+        # while Home Assistant can localize the name based on the translation key.
         self._attr_name = ENTITY_NAMES[key]
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.entry.entry_id)},
