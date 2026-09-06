@@ -2,17 +2,39 @@
   "title": "Battery Monitor",
   "entity": {
     "sensor": {
-      "status": { "name": "Status" },
-      "total": { "name": "Gesamt" },
-      "low": { "name": "Niedriger Ladezustand" },
-      "low_devices": { "name": "Geräte mit niedrigem Ladezustand" },
-      "zero_count": { "name": "Anzahl 0%" },
-      "unavailable_count": { "name": "Nicht verfügbar" },
-      "lowest": { "name": "Niedrigster Wert" },
-      "low_percent": { "name": "Anteil niedrig" },
-      "zero_percent": { "name": "Anteil 0%" },
-      "low_list": { "name": "Liste niedriger Geräte" },
-      "overview": { "name": "Übersicht" }
+      "status": {
+        "name": "Status"
+      },
+      "total": {
+        "name": "Gesamt"
+      },
+      "low": {
+        "name": "Niedriger Ladezustand"
+      },
+      "low_devices": {
+        "name": "Geräte mit niedrigem Ladezustand"
+      },
+      "zero_count": {
+        "name": "Anzahl 0%"
+      },
+      "unavailable_count": {
+        "name": "Nicht verfügbar"
+      },
+      "lowest": {
+        "name": "Niedrigster Wert"
+      },
+      "low_percent": {
+        "name": "Anteil niedrig"
+      },
+      "zero_percent": {
+        "name": "Anteil 0%"
+      },
+      "low_list": {
+        "name": "Liste niedriger Geräte"
+      },
+      "overview": {
+        "name": "Übersicht"
+      }
     }
   },
   "config": {
@@ -29,8 +51,9 @@
           "exclude_entities": "Diese Entitäten ausschließen (Mehrfachauswahl)",
           "include_patterns": "Nur passende Entity-IDs einbeziehen (fnmatch, durch Kommas getrennt)",
           "exclude_patterns": "Entity-IDs ausschließen, die entsprechen (fnmatch, durch Kommas getrennt)",
-          "ignore_zero_for_lowest": "0% für niedrigsten Batteriestand ignorieren",
+          "ignore_zero_for_lowest": "0% bei der Berechnung des niedrigsten Batteriestands ignorieren",
           "treat_unavailable_as_zero": "Nicht verfügbare Batterien als 0% behandeln (wenn kein aktueller Wert bekannt ist)",
+          "unavailable_retention_hours": "Letzten bekannten Wert nicht verfügbarer Batterien behalten für (Stunden, 0 = bis die Entität aus Home Assistant entfernt wird)",
           "notify_on_zero": "Benachrichtigung senden, wenn 0% erreicht wird"
         }
       }
@@ -55,8 +78,9 @@
           "exclude_entities": "Diese Entitäten ausschließen (Mehrfachauswahl)",
           "include_patterns": "Nur passende Entity-IDs einbeziehen (fnmatch, durch Kommas getrennt)",
           "exclude_patterns": "Entity-IDs ausschließen, die entsprechen (fnmatch, durch Kommas getrennt)",
-          "ignore_zero_for_lowest": "0% für niedrigsten Batteriestand ignorieren",
+          "ignore_zero_for_lowest": "0% bei der Berechnung des niedrigsten Batteriestands ignorieren",
           "treat_unavailable_as_zero": "Nicht verfügbare Batterien als 0% behandeln (wenn kein aktueller Wert bekannt ist)",
+          "unavailable_retention_hours": "Letzten bekannten Wert nicht verfügbarer Batterien behalten für (Stunden, 0 = bis die Entität aus Home Assistant entfernt wird)",
           "notify_on_zero": "Benachrichtigung senden, wenn 0% erreicht wird"
         }
       }
