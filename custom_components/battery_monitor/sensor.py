@@ -15,20 +15,6 @@ from .coordinator import BatteryCoordinator, BatterySnapshot
 
 PARALLEL_UPDATES = 0
 
-ENTITY_NAMES = {
-    "status": "Status",
-    "total": "Total",
-    "low": "Low",
-    "low_devices": "Low Devices",
-    "zero_count": "Zero Count",
-    "unavailable_count": "Unavailable Count",
-    "lowest": "Lowest",
-    "low_percent": "Low Percent",
-    "zero_percent": "Zero Percent",
-    "low_list": "Low List",
-    "overview": "Overview",
-}
-
 
 def _snap_list(items: list[BatterySnapshot]) -> list[dict[str, Any]]:
     return [
@@ -53,9 +39,7 @@ class BatteryBaseSensor(CoordinatorEntity[BatteryCoordinator], SensorEntity):
     def __init__(self, coordinator: BatteryCoordinator, key: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_{key}"
-        # Names are intentionally not translated so entity_ids stay stable
-        # (sensor.battery_monitor_status, ...) across languages.
-        self._attr_name = ENTITY_NAMES[key]
+        self._attr_translation_key = key
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.entry.entry_id)},
             name="Battery Monitor",

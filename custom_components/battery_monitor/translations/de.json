@@ -1,0 +1,92 @@
+{
+  "title": "Battery Monitor",
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Status"
+      },
+      "total": {
+        "name": "Gesamt"
+      },
+      "low": {
+        "name": "Niedriger Ladezustand"
+      },
+      "low_devices": {
+        "name": "Geräte mit niedrigem Ladezustand"
+      },
+      "zero_count": {
+        "name": "Anzahl 0%"
+      },
+      "unavailable_count": {
+        "name": "Nicht verfügbar"
+      },
+      "lowest": {
+        "name": "Niedrigster Wert"
+      },
+      "low_percent": {
+        "name": "Anteil niedrig"
+      },
+      "zero_percent": {
+        "name": "Anteil 0%"
+      },
+      "low_list": {
+        "name": "Liste niedriger Geräte"
+      },
+      "overview": {
+        "name": "Übersicht"
+      }
+    }
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "Battery Monitor",
+        "description": "Überwacht alle Batterie-Entitäten in Home Assistant.",
+        "data": {
+          "threshold": "Schwellenwert für niedrigen Batteriestand (%)",
+          "critical_threshold": "Schwellenwert für kritischen Batteriestand (%)",
+          "include_heuristic": "Heuristik verwenden (Wort 'battery' im Namen / Entity-ID) zusätzlich zum device_class",
+          "scan_domains": "Zu durchsuchende Domains (durch Kommas getrennt, z. B. sensor, binary_sensor)",
+          "include_entities": "Nur diese Entitäten einbeziehen (Mehrfachauswahl)",
+          "exclude_entities": "Diese Entitäten ausschließen (Mehrfachauswahl)",
+          "include_patterns": "Nur passende Entity-IDs einbeziehen (fnmatch, durch Kommas getrennt)",
+          "exclude_patterns": "Entity-IDs ausschließen, die entsprechen (fnmatch, durch Kommas getrennt)",
+          "ignore_zero_for_lowest": "0% bei der Berechnung des niedrigsten Batteriestands ignorieren",
+          "treat_unavailable_as_zero": "Nicht verfügbare Batterien als 0% behandeln (wenn kein aktueller Wert bekannt ist)",
+          "unavailable_retention_hours": "Letzten bekannten Wert nicht verfügbarer Batterien behalten für (Stunden, 0 = bis die Entität aus Home Assistant entfernt wird)",
+          "notify_on_zero": "Benachrichtigung senden, wenn 0% erreicht wird"
+        }
+      }
+    },
+    "error": {
+      "critical_above_low": "Der kritische Schwellenwert darf nicht höher sein als der niedrige Schwellenwert."
+    },
+    "abort": {
+      "single_instance_allowed": "Es ist nur eine Instanz von Battery Monitor erlaubt."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Battery Monitor-Optionen",
+        "data": {
+          "threshold": "Schwellenwert für niedrigen Batteriestand (%)",
+          "critical_threshold": "Schwellenwert für kritischen Batteriestand (%)",
+          "include_heuristic": "Heuristik verwenden (Wort 'battery' im Namen / Entity-ID) zusätzlich zum device_class",
+          "scan_domains": "Zu durchsuchende Domains (durch Kommas getrennt, z. B. sensor, binary_sensor)",
+          "include_entities": "Nur diese Entitäten einbeziehen (Mehrfachauswahl)",
+          "exclude_entities": "Diese Entitäten ausschließen (Mehrfachauswahl)",
+          "include_patterns": "Nur passende Entity-IDs einbeziehen (fnmatch, durch Kommas getrennt)",
+          "exclude_patterns": "Entity-IDs ausschließen, die entsprechen (fnmatch, durch Kommas getrennt)",
+          "ignore_zero_for_lowest": "0% bei der Berechnung des niedrigsten Batteriestands ignorieren",
+          "treat_unavailable_as_zero": "Nicht verfügbare Batterien als 0% behandeln (wenn kein aktueller Wert bekannt ist)",
+          "unavailable_retention_hours": "Letzten bekannten Wert nicht verfügbarer Batterien behalten für (Stunden, 0 = bis die Entität aus Home Assistant entfernt wird)",
+          "notify_on_zero": "Benachrichtigung senden, wenn 0% erreicht wird"
+        }
+      }
+    },
+    "error": {
+      "critical_above_low": "Der kritische Schwellenwert darf nicht höher sein als der niedrige Schwellenwert."
+    }
+  }
+}

@@ -1,5 +1,20 @@
 {
   "title": "Battery Monitor",
+  "entity": {
+    "sensor": {
+      "status": { "name": "Status" },
+      "total": { "name": "Total" },
+      "low": { "name": "Low" },
+      "low_devices": { "name": "Low Devices" },
+      "zero_count": { "name": "Zero Count" },
+      "unavailable_count": { "name": "Unavailable Count" },
+      "lowest": { "name": "Lowest" },
+      "low_percent": { "name": "Low Percent" },
+      "zero_percent": { "name": "Zero Percent" },
+      "low_list": { "name": "Low List" },
+      "overview": { "name": "Overview" }
+    }
+  },
   "config": {
     "step": {
       "user": {

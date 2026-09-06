@@ -8,6 +8,13 @@ on:
   workflow_dispatch:
 
 jobs:
+  validate-translations:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v4"
+      - name: Test translations
+        run: python -m unittest discover -s tests -p 'test_*.py'
+
   validate-hacs:
     runs-on: "ubuntu-latest"
     steps:
