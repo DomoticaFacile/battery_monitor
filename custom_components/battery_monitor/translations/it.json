@@ -4,14 +4,14 @@
     "sensor": {
       "status": { "name": "Stato" },
       "total": { "name": "Totale" },
-      "low": { "name": "Basso" },
+      "low": { "name": "Batterie basse" },
       "low_devices": { "name": "Dispositivi a batteria bassa" },
       "zero_count": { "name": "Conteggio a zero" },
       "unavailable_count": { "name": "Non disponibili" },
-      "lowest": { "name": "Più basso" },
+      "lowest": { "name": "Più scarica" },
       "low_percent": { "name": "Percentuale bassa" },
       "zero_percent": { "name": "Percentuale zero" },
-      "low_list": { "name": "Elenco bassi" },
+      "low_list": { "name": "Lista batterie basse" },
       "overview": { "name": "Panoramica" }
     }
   },

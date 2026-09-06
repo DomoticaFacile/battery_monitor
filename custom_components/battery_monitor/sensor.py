@@ -15,20 +15,6 @@ from .coordinator import BatteryCoordinator, BatterySnapshot
 
 PARALLEL_UPDATES = 0
 
-ENTITY_NAMES = {
-    "status": "Status",
-    "total": "Total",
-    "low": "Low",
-    "low_devices": "Low Devices",
-    "zero_count": "Zero Count",
-    "unavailable_count": "Unavailable Count",
-    "lowest": "Lowest",
-    "low_percent": "Low Percent",
-    "zero_percent": "Zero Percent",
-    "low_list": "Low List",
-    "overview": "Overview",
-}
-
 
 def _snap_list(items: list[BatterySnapshot]) -> list[dict[str, Any]]:
     return [
@@ -54,9 +40,6 @@ class BatteryBaseSensor(CoordinatorEntity[BatteryCoordinator], SensorEntity):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_{key}"
         self._attr_translation_key = key
-        # Keep the English fallback for environments without translations,
-        # while Home Assistant can localize the name based on the translation key.
-        self._attr_name = ENTITY_NAMES[key]
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.entry.entry_id)},
             name="Battery Monitor",
