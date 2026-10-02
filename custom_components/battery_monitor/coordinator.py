@@ -57,10 +57,14 @@ _LOGGER = logging.getLogger(__name__)
 
 _INVALID_STATES = (STATE_UNKNOWN, STATE_UNAVAILABLE, "", "none")
 
-# Keywords that, combined with a "%" unit, strongly indicate a battery level.
+
 _STRICT_BATTERY_KEYWORDS = ("battery_percent", "battery_level", "battery level", "battery_state", "batt_level")
-# Keywords that indicate the entity is about the battery but is NOT a level.
-_EXCLUDE_KEYWORDS = ("charging", "current", "power", "load", "voltage", "energy", "temperature", "health", "cycles")
+
+_EXCLUDE_KEYWORDS = (
+    "charging", "current", "power", "load", "voltage", "energy", "temperature",
+    "health", "cycles", "shutdown", "runtime", "time_left", "timeleft",
+    "threshold", "setpoint",
+)
 
 _NOTIFICATION_TEXTS: dict[str, dict[str, str]] = {
     "en": {
@@ -124,7 +128,7 @@ def _is_battery_entity(state: State, heuristic: bool, registry_device_class: str
     text = f"{eid} {name}"
     unit = str(attrs.get("unit_of_measurement") or "").strip()
     if unit != "%":
-        # The heuristic only ever accepts percentage values.
+
         return False
 
     if any(k in text for k in _STRICT_BATTERY_KEYWORDS):
@@ -155,8 +159,8 @@ class BatterySnapshot:
     device_class: str | None
     device_id: str | None
     device_name: str | None
-    retained: bool = False  # value comes from the retention cache
-    assumed_zero: bool = False  # unavailable and treated as 0% by option
+    retained: bool = False
+    assumed_zero: bool = False
 
     @property
     def display_name(self) -> str:
@@ -188,13 +192,11 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._scan_domains = set(self._config().get("scan_domains_list", ["sensor"]))
         self._unsub_state = hass.bus.async_listen(EVENT_STATE_CHANGED, self._handle_state_change)
 
-    # ------------------------------------------------------------------ config
     def _config(self) -> dict[str, Any]:
         cfg = {**self.entry.data, **(self.entry.options or {})}
         cfg["scan_domains_list"] = _csv_to_list(cfg.get(CONF_SCAN_DOMAINS, DEFAULT_SCAN_DOMAINS)) or ["sensor"]
         return cfg
 
-    # ---------------------------------------------------------------- storage
     @staticmethod
     def _storage_key(entry: ConfigEntry) -> str:
         return f"{DOMAIN}.{entry.entry_id}"
@@ -203,7 +205,7 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Restore last known values and notification state from disk."""
         try:
             data = await self._store.async_load()
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             _LOGGER.warning("Battery Monitor: could not load stored data: %s", err)
             return
         if not data:
@@ -235,7 +237,6 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def async_remove_storage(hass: HomeAssistant, entry: ConfigEntry) -> None:
         await Store(hass, STORAGE_VERSION, BatteryCoordinator._storage_key(entry)).async_remove()
 
-    # ------------------------------------------------------------- listeners
     @callback
     def _handle_state_change(self, event: Event) -> None:
         entity_id: str = event.data.get("entity_id", "")
@@ -246,7 +247,7 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return
         old: State | None = event.data.get("old_state")
         new: State | None = event.data.get("new_state")
-        # Only refresh when the value actually changed (not just attributes).
+
         if old is not None and new is not None and old.state == new.state:
             return
         self.hass.async_create_task(self._debouncer.async_call())
@@ -284,14 +285,26 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         dev_reg = dr.async_get(self.hass)
         now = datetime.now(timezone.utc)
 
-        # Purge cache entries: expired (if a retention period is set) or whose
-        # entity has been removed from Home Assistant (absent from both the
-        # state machine and the entity registry).
+        def passes_filters(eid: str) -> bool:
+            """Apply the include/exclude configuration to an entity_id."""
+            if eid.split(".", 1)[0] not in scan_domains:
+                return False
+            if include_entities and eid not in include_entities:
+                return False
+            if eid in exclude_entities:
+                return False
+            if include_patterns and not _match_any(eid, include_patterns):
+                return False
+            if exclude_patterns and _match_any(eid, exclude_patterns):
+                return False
+            return True
+
         cache_changed = False
         for eid, (_, seen_at) in list(self._last_valid_snapshots.items()):
             expired = retention is not None and now - seen_at > retention
+            filtered_out = not passes_filters(eid)
             removed = self.hass.states.get(eid) is None and ent_reg.async_get(eid) is None
-            if expired or removed:
+            if expired or filtered_out or removed:
                 self._last_valid_snapshots.pop(eid, None)
                 cache_changed = True
 
@@ -306,13 +319,7 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ent = ent_reg.async_get(eid)
             if ent is not None and ent.platform == DOMAIN:
                 continue
-            if include_entities and eid not in include_entities:
-                continue
-            if eid in exclude_entities:
-                continue
-            if include_patterns and not _match_any(eid, include_patterns):
-                continue
-            if exclude_patterns and _match_any(eid, exclude_patterns):
+            if not passes_filters(eid):
                 continue
 
             reg_dc = None
@@ -356,7 +363,6 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             batteries.append(snap)
             seen.add(eid)
 
-        # Entities that disappeared from the state machine but are still cached.
         for eid, (cached, _) in self._last_valid_snapshots.items():
             if eid in seen:
                 continue
@@ -425,7 +431,6 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "unavailable_retention_hours": retention_hours,
         }
 
-    # --------------------------------------------------------------- helpers
     def _apply_retention(self, snap: BatterySnapshot, treat_unavailable_as_zero: bool) -> BatterySnapshot:
         """Fill in a value for an unavailable entity from cache or option."""
         cached = self._last_valid_snapshots.get(snap.entity_id)
@@ -449,14 +454,14 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         zero_now = {b.entity_id for b in zero}
         by_id = {b.entity_id: b for b in batteries}
 
-        # Entities previously at 0% that are now unavailable with no value
-        # (cache expired and option disabled): keep them pending, never
-        # report them as "resolved" until they really come back above 0%.
         pending = {
             eid
             for eid in self._last_zero_set
             if eid in by_id and not by_id[eid].available and by_id[eid].value is None
         }
+
+        unmonitored = {eid for eid in self._last_zero_set if eid not in by_id}
+
         tracked = zero_now | pending
 
         changed = tracked != self._last_zero_set
@@ -484,9 +489,10 @@ class BatteryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
         elif self._last_zero_set:
             persistent_notification.async_dismiss(self.hass, nid)
-            persistent_notification.async_create(
-                self.hass, t["resolved_body"], title=t["resolved_title"], notification_id=nid_resolved
-            )
+            if self._last_zero_set - unmonitored:
+                persistent_notification.async_create(
+                    self.hass, t["resolved_body"], title=t["resolved_title"], notification_id=nid_resolved
+                )
 
         self._last_zero_set = tracked
         return changed
