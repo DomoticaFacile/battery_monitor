@@ -102,6 +102,7 @@ class BatteryTotalSensor(BatteryBaseSensor):
 class BatteryLowSensor(BatteryBaseSensor):
     _attr_icon = "mdi:battery-alert"
     _attr_state_class = SensorStateClass.MEASUREMENT
+    _unrecorded_attributes = frozenset({"entities", "devices", "names", "values", "retained"})
 
     @property
     def native_value(self) -> int:
@@ -132,6 +133,7 @@ class BatteryLowDevicesSensor(BatteryBaseSensor):
 class BatteryZeroCountSensor(BatteryBaseSensor):
     _attr_icon = "mdi:battery-alert-variant"
     _attr_state_class = SensorStateClass.MEASUREMENT
+    _unrecorded_attributes = frozenset({"entities", "devices", "retained", "assumed_zero"})
 
     @property
     def native_value(self) -> int:
@@ -152,6 +154,7 @@ class BatteryUnavailableCountSensor(BatteryBaseSensor):
     _attr_icon = "mdi:battery-unknown"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _unrecorded_attributes = frozenset({"entities", "devices", "last_known_values"})
 
     @property
     def native_value(self) -> int:
@@ -217,6 +220,7 @@ class BatteryZeroPercentSensor(BatteryBaseSensor):
 
 class BatteryLowListSensor(BatteryBaseSensor):
     _attr_icon = "mdi:format-list-bulleted"
+    _unrecorded_attributes = frozenset({"items"})
 
     @property
     def native_value(self) -> str:
@@ -231,6 +235,7 @@ class BatteryLowListSensor(BatteryBaseSensor):
 class BatteryOverviewSensor(BatteryBaseSensor):
     _attr_icon = "mdi:battery-sync"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _unrecorded_attributes = frozenset({"batteries"})
 
     @property
     def native_value(self) -> int:
