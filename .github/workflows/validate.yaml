@@ -1,18 +1,21 @@
 name: Validate
 
 on:
-  push: 
+  push:
   pull_request:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   validate-translations:
     runs-on: "ubuntu-latest"
     steps:
-      - uses: "actions/checkout@v4"
-      - name: Test translations
+      - uses: "actions/checkout@v5"
+      - name: Test translations and recorder attributes
         run: python -m unittest discover -s tests -p 'test_*.py'
 
   validate-hacs:
