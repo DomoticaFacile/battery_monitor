@@ -11,7 +11,7 @@ A custom integration to **monitor all battery entities** in Home Assistant and g
 
 > Perfect for Zigbee setups (ZHA / Zigbee2MQTT), Wi-Fi devices, and any integration that exposes battery sensors.
 
-![HACS Custom](https://img.shields.io/badge/HACS-Custom-blue)
+![HACS Default](https://img.shields.io/badge/HACS-Default-blue)
 ![Platform](https://img.shields.io/badge/Platform-Home%20Assistant-41BDF5)
 ![Maintainer](https://img.shields.io/badge/Maintainer-DomoticaFacile-blueviolet)
 [![Donate](https://img.shields.io/badge/Buy_Me_A_Coffee-%E2%98%95-yellow)](https://www.buymeacoffee.com/domoticafacile)
@@ -27,7 +27,7 @@ A custom integration to **monitor all battery entities** in Home Assistant and g
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-Channel-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://whatsapp.com/channel/0029Vb5qW5O4o7qPGrFbRm1T)
 
 <p align="center">
-  <img width="400" height="400" alt="icon" src="https://github.com/user-attachments/assets/a6da43c2-e5eb-422d-aba3-9c42e908a043" />
+  <img width="400" height="400" alt="icon" src="custom_components/battery_monitor/brand/icon.png" />
 </p>
 
 📣 Do you like this integration? ⭐ Star the repository to support the project!
@@ -43,21 +43,29 @@ A custom integration to **monitor all battery entities** in Home Assistant and g
 ✅ Traffic-light status: **OK / WARNING / CRITICAL**  
 ✅ Option to **ignore 0%** when calculating the lowest battery  
 ✅ Option for **automatic notification** when a 0% battery appears  
-✅ Clean Low List: it does not include sensors created by the Battery Monitor integration
+✅ Clean Low List: it does not include sensors created by the Battery Monitor integration  
+✅ **Last known value kept** when a battery goes unavailable — saved to disk, restored after a restart  
+✅ Dedicated **Unavailable Count** sensor, with the last known value of each missing battery  
+✅ **Instant updates**: sensors refresh a few seconds after any battery changes  
+✅ All entities grouped under one **Battery Monitor device**, with **diagnostics** you can download  
+✅ **Localized interface**: English, Italian and German
 
 ---
 
 ## ⚙️ Installation via HACS
 
+Battery Monitor is available **directly in HACS** — no custom repository needed.
+
+> Requires **Home Assistant 2024.12** or newer.
+
 > If you don’t have HACS, follow the official guide: https://hacs.xyz
 
 1. Open **HACS**
-2. Click the **three dots** in the top-right corner
-3. Select **Custom repositories**
-4. Copy & paste this repository URL: https://github.com/DomoticaFacile/battery_monitor
-5. Select **Integration**
-6. Click **Add**
-7. Find the integration in the HACS list, click it and then install it.
+2. Search for **Battery Monitor**
+3. Open it and click **Download**
+4. **Restart Home Assistant**
+
+> 🛒 On Home Assistant **2026.11 and newer** HACS is built in as **Marketplace**: go to **Settings → Marketplace** and search for **Battery Monitor** there.
 
 ---
 
@@ -97,7 +105,11 @@ You can add other domains separated by commas if needed.
 - **include_entities**: if you select one or more sensors, Battery Monitor will scan **only** those.
 - **exclude_entities**: selected sensors are **always excluded**.
 
-📌 Pattern filters (fnmatch, e.g. `sensor.*_battery`) are available in the same form for advanced users.
+For advanced users, the same form also has two pattern filters (fnmatch, comma separated):
+- **include_patterns**: scan only the entity_ids that match, e.g. `sensor.*_battery`
+- **exclude_patterns**: skip the entity_ids that match, e.g. `sensor.ups_*`
+
+📌 Exclusions always win: an entity excluded by list or by pattern disappears from every sensor, including the retained values of unavailable batteries.
 
 > ⚙️ Options are applied immediately when saved; sensors update within a few seconds of any battery change (plus a 5‑minute safety poll).
 
@@ -163,11 +175,19 @@ Shows the **lowest battery level** found (percentage).
 ---
 
 ### 🧾 Battery Monitor Low List (`sensor.battery_monitor_low_list`)
-Ready-to-use text list of devices below threshold (e.g., `Name: 12% | Name2: 18%`).
+Ready-to-use text list of devices below threshold, with a traffic-light marker per battery:
+
+```
+🔴 Kitchen Sensor: 4% | 🟡 Front Door: 12% | 🟡 Garage: 18%
+```
+
+🔴 at or below the critical threshold, 🟡 at or below the low threshold.
 
 🔧 Useful for:
 - quick Lovelace list cards
 - notifications without complex templates
+
+📌 Home Assistant limits a state to 255 characters, so on large setups the text is truncated. The complete list is always available in the `items` attribute, one entry per battery with name, value and availability.
 
 ---
 
@@ -202,6 +222,16 @@ Technical summary sensor: the state is a total, but the real value is in the **a
 - full battery list (entity_id, name, value, availability)
 - threshold and counts
 - useful details for advanced cards or debugging
+
+> 📝 The list attributes (`batteries`, `items`, `entities`, …) are **not written to the recorder database**: they grow with the number of batteries and would exceed Home Assistant's 16 KiB per-state limit on large setups. They are fully available live for dashboards, templates and automations — only their history is not kept. The counters and percentages are recorded as usual.
+
+---
+
+## 🩺 Diagnostics
+
+All entities are grouped under a single **Battery Monitor** device in **Settings → Devices & services → Devices**.
+
+From there, **Download diagnostics** gives you a JSON file with the current configuration and every battery found, with its value and availability. Attach it to an issue and you spare yourself a long back and forth.
 
 ---
 
@@ -345,7 +375,7 @@ Integrazione personalizzata per **monitorare tutte le entità batteria** present
 
 > Perfetta per impianti Zigbee (ZHA / Zigbee2MQTT), Wi-Fi e qualsiasi integrazione che esponga sensori di batteria.
 
-![HACS Custom](https://img.shields.io/badge/HACS-Custom-blue)
+![HACS Default](https://img.shields.io/badge/HACS-Default-blue)
 ![Platform](https://img.shields.io/badge/Platform-Home%20Assistant-41BDF5)
 ![Maintainer](https://img.shields.io/badge/Maintainer-DomoticaFacile-blueviolet)
 [![Donate](https://img.shields.io/badge/Buy_Me_A_Coffee-%E2%98%95-yellow)](https://www.buymeacoffee.com/domoticafacile)
@@ -361,7 +391,7 @@ Integrazione personalizzata per **monitorare tutte le entità batteria** present
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-Canale-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://whatsapp.com/channel/0029Vb5qW5O4o7qPGrFbRm1T)
 
 <p align="center">
-  <img width="400" height="400" alt="icon" src="https://github.com/user-attachments/assets/a6da43c2-e5eb-422d-aba3-9c42e908a043" />
+  <img width="400" height="400" alt="icon" src="custom_components/battery_monitor/brand/icon.png" />
 </p>
 
 📣 Ti piace questa integrazione? ⭐ Metti una stella al repository per supportare il progetto!
@@ -377,21 +407,29 @@ Integrazione personalizzata per **monitorare tutte le entità batteria** present
 ✅ Stato “semaforo”: **OK / WARNING / CRITICAL**  
 ✅ Opzione per **ignorare 0%** nel calcolo della batteria più scarica  
 ✅ Opzione per **notifica automatica** quando compare uno 0%  
-✅ Low List pulita: non include i sensori creati dall’integrazione Battery Monitor
+✅ Low List pulita: non include i sensori creati dall’integrazione Battery Monitor  
+✅ **Ultimo valore noto conservato** quando una batteria diventa non disponibile — salvato su disco e ripristinato dopo un riavvio  
+✅ Sensore dedicato **Unavailable Count**, con l’ultimo valore noto di ogni batteria mancante  
+✅ **Aggiornamenti immediati**: i sensori si aggiornano pochi secondi dopo ogni variazione  
+✅ Tutte le entità raggruppate in un unico **dispositivo Battery Monitor**, con **diagnostica** scaricabile  
+✅ **Interfaccia localizzata**: inglese, italiano e tedesco
 
 ---
 
 ## ⚙️ Installazione tramite HACS
 
+Battery Monitor è disponibile **direttamente in HACS** — non serve aggiungere alcun repository personalizzato.
+
+> Richiede **Home Assistant 2024.12** o successivo.
+
 > Se non hai HACS, segui la guida ufficiale: https://hacs.xyz
 
 1. Apri **HACS**
-2. Vai sui 3 pallini in alto a destra
-3. Clicca su "Archivi digitali personalizzati"
-4. Copia e incolla l'indirizzo di questo repo: https://github.com/DomoticaFacile/battery_monitor
-5. Seleziona "Integrazione"
-6. Clicca "Aggiungi"
-7. Cerca l'integrazione nell'elenco di HACS, clicca e poi installa
+2. Cerca **Battery Monitor**
+3. Aprila e clicca **Scarica**
+4. **Riavvia Home Assistant**
+
+> 🛒 Su Home Assistant **2026.11 e successivi** HACS è integrato come **Marketplace**: vai su **Impostazioni → Marketplace** e cerca **Battery Monitor**.
 
 ---
 
@@ -431,7 +469,11 @@ Puoi aggiungere altri domini separati da virgola se necessario.
 - **include_entities**: se selezioni uno o più sensori, Battery Monitor considera **solo** quelli.
 - **exclude_entities**: i sensori selezionati vengono **sempre esclusi**.
   
-📌 Nello stesso form sono disponibili i filtri pattern (fnmatch, es. `sensor.*_battery`) per utenti avanzati.
+Per utenti avanzati, nello stesso form ci sono anche due filtri pattern (fnmatch, separati da virgola):
+- **include_patterns**: considera solo gli entity_id che corrispondono, es. `sensor.*_battery`
+- **exclude_patterns**: ignora gli entity_id che corrispondono, es. `sensor.ups_*`
+
+📌 Le esclusioni hanno sempre la precedenza: un’entità esclusa per elenco o per pattern sparisce da tutti i sensori, compresi i valori conservati delle batterie non disponibili.
 
 > ⚙️ Le opzioni si applicano subito al salvataggio; i sensori si aggiornano entro pochi secondi da ogni variazione (più un polling di sicurezza ogni 5 minuti).
 
@@ -497,11 +539,19 @@ Mostra la **batteria più scarica** trovata (in percentuale).
 ---
 
 ### 🧾 Battery Monitor Low List (`sensor.battery_monitor_low_list`)
-Lista testuale pronta dei dispositivi sotto soglia (es. `Nome: 12% | Nome2: 18%`).
+Lista testuale pronta dei dispositivi sotto soglia, con un indicatore “semaforo” per ogni batteria:
+
+```
+🔴 Sensore Cucina: 4% | 🟡 Porta Ingresso: 12% | 🟡 Garage: 18%
+```
+
+🔴 pari o sotto la soglia critica, 🟡 pari o sotto la soglia bassa.
 
 🔧 Utile per:
 - card Lovelace “lista rapida”
 - notifiche già pronte senza template complessi
+
+📌 Home Assistant limita lo stato a 255 caratteri, quindi negli impianti grandi il testo viene troncato. L’elenco completo è sempre disponibile nell’attributo `items`, una voce per batteria con nome, valore e disponibilità.
 
 ---
 
@@ -536,6 +586,16 @@ Sensore “tecnico” di riepilogo: il valore è un totale, ma negli **attributi
 - elenco completo batterie (entity_id, nome, valore, disponibile)
 - soglia e conteggi
 - dettagli utili per card avanzate o debug
+
+> 📝 Gli attributi a elenco (`batteries`, `items`, `entities`, …) **non vengono scritti nel database del recorder**: crescono col numero di batterie e supererebbero il limite di 16 KiB per stato di Home Assistant negli impianti grandi. Restano pienamente disponibili in tempo reale per dashboard, template e automazioni: non viene conservato solo il loro storico. Conteggi e percentuali vengono registrati come sempre.
+
+---
+
+## 🩺 Diagnostica
+
+Tutte le entità sono raggruppate in un unico dispositivo **Battery Monitor**, in **Impostazioni → Dispositivi e servizi → Dispositivi**.
+
+Da lì, **Scarica diagnostica** produce un file JSON con la configurazione attuale e tutte le batterie trovate, con valore e disponibilità. Allegandolo a una segnalazione si evita un lungo scambio di messaggi.
 
 ---
 
